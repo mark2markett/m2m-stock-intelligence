@@ -89,12 +89,45 @@ export class PDFGenerator {
     doc.setFont('helvetica', 'normal');
     doc.text(`Current Price: $${stockData.price.toFixed(2)} (${stockData.change >= 0 ? '+' : ''}${stockData.changePercent.toFixed(2)}%)`, 25, yPosition);
     yPosition += 5;
-    doc.text(`Setup Stage: ${report.setupStage} | Quality: ${report.tradeQuality} | Confidence: ${report.confidenceScore}/100`, 25, yPosition);
+    doc.text(`Setup Stage: ${report.setupStage} | M2M Score: ${report.scorecard.totalScore}/${report.scorecard.maxScore} | Factors: ${report.scorecard.factorsPassed}/${report.scorecard.totalFactors}`, 25, yPosition);
     yPosition += 5;
-    doc.text(`Volatility Regime: ${report.volatilityRegime} | News Sentiment: ${newsData.length > 0 ? analyzeSentiment(newsData) : 'Neutral'}`, 25, yPosition);
+    doc.text(`Volatility Regime: ${report.volatilityRegime} | News Sentiment: ${newsData.length > 0 ? analyzeSentiment(newsData) : 'Neutral'} | ${report.scorecard.publishable ? 'PUBLISHABLE' : 'Below Threshold'}`, 25, yPosition);
     yPosition += 5;
     doc.text(`Support: $${indicators.bollingerBands.lower.toFixed(2)} | Resistance: $${indicators.bollingerBands.upper.toFixed(2)}`, 25, yPosition);
     yPosition += 15;
+
+    // M2M 6-Factor Scorecard
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('M2M 6-Factor Scorecard', 20, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+
+    // Header row
+    doc.setFont('helvetica', 'bold');
+    doc.text('Factor', 25, yPosition);
+    doc.text('Score', 110, yPosition);
+    doc.text('Status', 135, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 6;
+
+    report.scorecard.factors.forEach((factor) => {
+      doc.text(factor.name, 25, yPosition);
+      doc.text(`${factor.score}/${factor.maxPoints}`, 110, yPosition);
+      doc.text(factor.passed ? 'PASS' : 'FAIL', 135, yPosition);
+      yPosition += 6;
+    });
+
+    yPosition += 4;
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total: ${report.scorecard.totalScore}/${report.scorecard.maxScore}`, 25, yPosition);
+    doc.text(`Threshold: ${report.scorecard.meetsPublicationThreshold ? 'MET' : 'NOT MET'} (65+)`, 110, yPosition);
+    yPosition += 5;
+    doc.text(`Multi-Factor: ${report.scorecard.meetsMultiFactorRule ? 'MET' : 'NOT MET'} (4-of-6)`, 25, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 10;
 
     // Technical Indicators Table
     doc.setFontSize(12);

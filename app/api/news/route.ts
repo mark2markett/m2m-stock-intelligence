@@ -35,8 +35,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(news, {
       headers: { 'X-RateLimit-Remaining': String(remaining) }
     });
-  } catch (error) {
-    console.error('News proxy error:', error instanceof Error ? error.message : 'Unknown error');
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch news data.' },
       { status: 500 }

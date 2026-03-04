@@ -48,8 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(data, {
       headers: { 'X-RateLimit-Remaining': String(remaining) }
     });
-  } catch (error) {
-    console.error('Polygon proxy error:', error instanceof Error ? error.message : 'Unknown error');
+  } catch {
     return NextResponse.json(
       { error: 'Failed to fetch stock data.' },
       { status: 500 }

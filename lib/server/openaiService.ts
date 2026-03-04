@@ -34,45 +34,40 @@ export class OpenAIService {
       rsiInterpretation
     );
 
-    try {
-      const response = await fetch(this.API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an educational market data analyst for the M2M Stock Intelligence platform. Generate observational technical analysis for educational purposes only. Never use advisory language like "consider buying", "you should", "we recommend", or "take a position". Instead use observational language like "indicators suggest", "historical patterns show", "data points to". Always frame analysis as educational observation, not investment advice.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 2000,
-          temperature: 0.7
-        })
-      });
+    const response = await fetch(this.API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an educational market data analyst for the M2M Stock Intelligence platform. Generate observational technical analysis for educational purposes only. Never use advisory language like "consider buying", "you should", "we recommend", or "take a position". Instead use observational language like "indicators suggest", "historical patterns show", "data points to". Always frame analysis as educational observation, not investment advice.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.7
+      })
+    });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-        throw new Error('Invalid response from OpenAI API');
-      }
-
-      return data.choices[0].message.content;
-    } catch (error) {
-      console.error('Error generating AI analysis:', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
+
+    const data = await response.json();
+
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response from OpenAI API');
+    }
+
+    return data.choices[0].message.content;
   }
 
   private static buildAnalysisPrompt(

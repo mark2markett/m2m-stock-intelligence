@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, BarChart3 } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, BarChart3, XCircle } from 'lucide-react';
 import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem } from '@/lib/types';
 
 interface AnalysisResultsProps {
@@ -19,15 +19,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   newsData,
   onDownloadPDF,
 }) => {
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'Tier 1': return 'text-[#00E59B] bg-[#00E59B]/10';
-      case 'Tier 2': return 'text-yellow-400 bg-yellow-400/10';
-      case 'Tier 3': return 'text-red-400 bg-red-400/10';
-      default: return 'text-[#9CA3AF] bg-[#1f2937]';
-    }
-  };
-
   const getSetupStageIcon = (stage: string) => {
     switch (stage) {
       case 'Setup Forming': return <Clock className="h-4 w-4" />;
@@ -38,11 +29,21 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     }
   };
 
-  const getConfidenceColor = (score: number) => {
-    if (score >= 80) return 'text-[#00E59B]';
-    if (score >= 60) return 'text-yellow-400';
+  const getScoreColor = (score: number, max: number) => {
+    const pct = max > 0 ? (score / max) * 100 : 0;
+    if (pct >= 70) return 'text-[#00E59B]';
+    if (pct >= 50) return 'text-yellow-400';
     return 'text-red-400';
   };
+
+  const getScoreBarColor = (score: number, max: number) => {
+    const pct = max > 0 ? (score / max) * 100 : 0;
+    if (pct >= 70) return 'bg-[#00E59B]';
+    if (pct >= 50) return 'bg-yellow-400';
+    return 'bg-red-400';
+  };
+
+  const { scorecard } = report;
 
   return (
     <div className="space-y-6">
@@ -81,16 +82,16 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           </div>
 
           <div className="bg-[#0a0e17] rounded-lg p-4 border border-[#1f2937]">
-            <div className="text-sm text-[#9CA3AF] mb-2">Pattern Quality</div>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTierColor(report.tradeQuality)}`}>
-              {report.tradeQuality}
+            <div className="text-sm text-[#9CA3AF] mb-2">M2M Score</div>
+            <span className={`font-semibold ${getScoreColor(scorecard.totalScore, scorecard.maxScore)}`}>
+              {scorecard.totalScore}/{scorecard.maxScore}
             </span>
           </div>
 
           <div className="bg-[#0a0e17] rounded-lg p-4 border border-[#1f2937]">
-            <div className="text-sm text-[#9CA3AF] mb-2">Confidence Score</div>
-            <span className={`font-semibold ${getConfidenceColor(report.confidenceScore)}`}>
-              {report.confidenceScore}/100
+            <div className="text-sm text-[#9CA3AF] mb-2">Factors Passed</div>
+            <span className={`font-semibold ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-yellow-400'}`}>
+              {scorecard.factorsPassed}/{scorecard.totalFactors}
             </span>
           </div>
 
@@ -98,6 +99,70 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             <div className="text-sm text-[#9CA3AF] mb-2">Volatility</div>
             <span className="font-semibold text-[#E5E7EB]">{report.volatilityRegime}</span>
           </div>
+        </div>
+      </div>
+
+      {/* M2M Scorecard Breakdown */}
+      <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold flex items-center gap-2 text-[#E5E7EB]">
+            <BarChart3 className="h-5 w-5 text-[#00E59B]" />
+            M2M 6-Factor Scorecard
+          </h3>
+          <div className="flex items-center gap-2">
+            {scorecard.publishable ? (
+              <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-[#00E59B]/10 text-[#00E59B]">
+                <CheckCircle className="h-3 w-3" />
+                Publishable
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-400/10 text-red-400">
+                <XCircle className="h-3 w-3" />
+                Below Threshold
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Threshold indicators */}
+        <div className="flex gap-4 mb-6 text-xs">
+          <div className={`flex items-center gap-1 ${scorecard.meetsPublicationThreshold ? 'text-[#00E59B]' : 'text-red-400'}`}>
+            {scorecard.meetsPublicationThreshold ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+            Score {'>'}= 65 threshold
+          </div>
+          <div className={`flex items-center gap-1 ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-red-400'}`}>
+            {scorecard.meetsMultiFactorRule ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+            4-of-6 factor rule
+          </div>
+        </div>
+
+        {/* Factor breakdown */}
+        <div className="space-y-4">
+          {scorecard.factors.map((factor, index) => (
+            <div key={index} className="bg-[#0a0e17] rounded-lg p-4 border border-[#1f2937]">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {factor.passed ? (
+                    <CheckCircle className="h-4 w-4 text-[#00E59B]" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-red-400" />
+                  )}
+                  <span className="text-sm font-medium text-[#E5E7EB]">{factor.name}</span>
+                </div>
+                <span className={`text-sm font-semibold ${getScoreColor(factor.score, factor.maxPoints)}`}>
+                  {factor.score}/{factor.maxPoints}
+                </span>
+              </div>
+              {/* Score bar */}
+              <div className="w-full bg-[#1f2937] rounded-full h-1.5 mb-2">
+                <div
+                  className={`h-1.5 rounded-full ${getScoreBarColor(factor.score, factor.maxPoints)}`}
+                  style={{ width: `${(factor.score / factor.maxPoints) * 100}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-[#6B7280]">{factor.rationale}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -199,7 +264,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
       </div>
 
-      {/* Observation Summary (was Final Recommendation) */}
+      {/* Observation Summary */}
       <div className="bg-[#111827] rounded-xl p-6 border border-[#00E59B]/20">
         <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[#E5E7EB]">
           {report.actionable ? <CheckCircle className="h-5 w-5 text-[#00E59B]" /> : <AlertTriangle className="h-5 w-5 text-yellow-400" />}

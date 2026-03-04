@@ -38,13 +38,6 @@ export interface SupportResistance {
   resistance: number[];
 }
 
-export interface EarningsData {
-  nextDate: string;
-  lastDate: string;
-  lastSurprise: number;
-  lastSurprisePercent: number;
-}
-
 export interface NewsItem {
   headline: string;
   sentiment: 'Positive' | 'Negative' | 'Neutral';
@@ -52,10 +45,29 @@ export interface NewsItem {
   source: string;
 }
 
+export interface M2MScoreFactor {
+  name: string;
+  maxPoints: number;
+  score: number;
+  passed: boolean;
+  rationale: string;
+}
+
+export interface M2MScorecard {
+  totalScore: number;
+  maxScore: number;
+  factorsPassed: number;
+  totalFactors: number;
+  meetsPublicationThreshold: boolean;
+  meetsMultiFactorRule: boolean;
+  publishable: boolean;
+  factors: M2MScoreFactor[];
+}
+
 export interface AnalysisReport {
   symbol: string;
   setupStage: 'Setup Forming' | 'Just Triggered' | 'Mid Setup' | 'Late Setup';
-  tradeQuality: 'Tier 1' | 'Tier 2' | 'Tier 3';
+  scorecard: M2MScorecard;
   volatilityRegime: 'High' | 'Normal' | 'Low';
   confidenceScore: number;
   actionable: boolean;
@@ -82,4 +94,11 @@ export interface HistoricalDataPoint {
   low: number;
   close: number;
   volume: number;
+}
+
+export interface AnalysisResult {
+  report: AnalysisReport;
+  stockData: StockData;
+  indicators: TechnicalIndicators;
+  news: NewsItem[];
 }

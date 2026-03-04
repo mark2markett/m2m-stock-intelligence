@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnalysisEngine } from '@/lib/server/analysisEngine';
-import { PolygonService } from '@/lib/server/polygonService';
-import { NewsService } from '@/lib/server/newsService';
-import { TechnicalIndicators } from '@/lib/utils/technicalIndicators';
 import { checkRateLimit } from '@/lib/server/rateLimiter';
 
 const SYMBOL_REGEX = /^[A-Z]{1,5}$/;
@@ -35,29 +32,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const report = await AnalysisEngine.generateAnalysis(symbol);
-
-    const [stockData, historicalData, newsData] = await Promise.all([
-      PolygonService.getStockDetails(symbol),
-      PolygonService.getHistoricalData(symbol, 'day', 25),
-      NewsService.getStockNews(symbol, 3)
-    ]);
-
-    const closes = historicalData.map((d: any) => d.close);
-    const highs = historicalData.map((d: any) => d.high);
-    const lows = historicalData.map((d: any) => d.low);
-    const volumes = historicalData.map((d: any) => d.volume);
-
-    const indicatorResults = TechnicalIndicators.computeIndicators(highs, lows, closes, volumes, 'daily');
-
-    report.historicalData = historicalData;
+    const result = await AnalysisEngine.generateAnalysis(symbol);
 
     return NextResponse.json(
       {
-        report,
-        stockData,
-        indicators: indicatorResults.indicators,
-        news: newsData
+        report: result.report,
+        stockData: result.stockData,
+        indicators: result.indicators,
+        news: result.news
       },
       {
         headers: {
@@ -65,8 +47,7 @@ export async function POST(request: NextRequest) {
         }
       }
     );
-  } catch (error) {
-    console.error('Analysis endpoint error:', error instanceof Error ? error.message : 'Unknown error');
+  } catch {
     return NextResponse.json(
       { error: 'Analysis failed. Please try again.' },
       { status: 500 }

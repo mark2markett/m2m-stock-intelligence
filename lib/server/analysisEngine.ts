@@ -2,86 +2,91 @@ import 'server-only';
 import { TechnicalIndicators } from '@/lib/utils/technicalIndicators';
 import { SupportResistanceAnalyzer } from '@/lib/utils/supportResistance';
 import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
-import { analyzeSentiment } from '@/lib/utils/sentimentAnalysis';
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
 import { OpenAIService } from './openaiService';
-import type { AnalysisReport, ReportSection } from '@/lib/types';
+import type { AnalysisReport, AnalysisResult, ReportSection } from '@/lib/types';
 
 export class AnalysisEngine {
-  static async generateAnalysis(symbol: string): Promise<AnalysisReport> {
+  /**
+   * Returns all data needed for display in a single call,
+   * eliminating duplicate API fetches.
+   */
+  static async generateAnalysis(symbol: string): Promise<AnalysisResult> {
     const historicalLimit = 60;
     const newsLimit = 3;
 
-    try {
-      const [stockData, historicalData, newsData] = await Promise.all([
-        PolygonService.getStockDetails(symbol),
-        PolygonService.getHistoricalData(symbol, 'day', historicalLimit),
-        NewsService.getStockNews(symbol, newsLimit)
-      ]);
+    const [stockData, historicalData, newsData] = await Promise.all([
+      PolygonService.getStockDetails(symbol),
+      PolygonService.getHistoricalData(symbol, 'day', historicalLimit),
+      NewsService.getStockNews(symbol, newsLimit)
+    ]);
 
-      const closes = historicalData.map((d: any) => d.close);
-      const highs = historicalData.map((d: any) => d.high);
-      const lows = historicalData.map((d: any) => d.low);
-      const volumes = historicalData.map((d: any) => d.volume);
+    const closes = historicalData.map((d: any) => d.close);
+    const highs = historicalData.map((d: any) => d.high);
+    const lows = historicalData.map((d: any) => d.low);
+    const volumes = historicalData.map((d: any) => d.volume);
 
-      const indicatorResults = TechnicalIndicators.computeIndicators(highs, lows, closes, volumes, 'daily');
-      const indicators = indicatorResults.indicators;
+    const indicatorResults = TechnicalIndicators.computeIndicators(highs, lows, closes, volumes, 'daily');
+    const indicators = indicatorResults.indicators;
 
-      const pivots = SupportResistanceAnalyzer.findPivotPoints(highs, lows, closes);
-      const { support, resistance } = SupportResistanceAnalyzer.getKeyLevels(pivots, stockData.price);
+    const pivots = SupportResistanceAnalyzer.findPivotPoints(highs, lows, closes);
+    const { support, resistance } = SupportResistanceAnalyzer.getKeyLevels(pivots, stockData.price);
 
-      const setupStage = TradeSetupAnalyzer.analyzeSetupStage(indicators, stockData.price, support, resistance, closes);
-      const newsSentiment = analyzeSentiment(newsData);
+    const setupStage = TradeSetupAnalyzer.analyzeSetupStage(indicators, stockData.price, support, resistance, closes);
 
-      const rsiInterpretation = TechnicalIndicators.interpretRsiForPdf(
-        indicators.rsi,
-        stockData.price,
-        indicators.ema20,
-        indicators.ema50,
-        indicators.macd.macd,
-        indicators.adx
-      );
+    const rsiInterpretation = TechnicalIndicators.interpretRsiForPdf(
+      indicators.rsi,
+      stockData.price,
+      indicators.ema20,
+      indicators.ema50,
+      indicators.macd.macd,
+      indicators.adx
+    );
 
-      const tradeQuality = TradeSetupAnalyzer.calculateTradeQuality(
-        indicators,
-        setupStage,
-        indicatorResults.regime as 'High' | 'Normal' | 'Low',
-        newsSentiment
-      );
+    const scorecard = TradeSetupAnalyzer.calculateM2MScorecard(
+      indicators,
+      setupStage,
+      indicatorResults.regime as 'High' | 'Normal' | 'Low',
+      newsData,
+      stockData.price,
+      support,
+      resistance
+    );
 
-      const aiGeneratedReport = await OpenAIService.generateAnalysisReport(
-        symbol,
-        stockData,
-        indicators,
-        support,
-        resistance,
-        this.formatSentimentData(newsData),
-        indicatorResults.regime as 'High' | 'Normal' | 'Low',
-        setupStage,
-        this.generateLifecycleRationale(setupStage, indicators, support, resistance),
-        rsiInterpretation
-      );
+    const aiGeneratedReport = await OpenAIService.generateAnalysisReport(
+      symbol,
+      stockData,
+      indicators,
+      support,
+      resistance,
+      this.formatSentimentData(newsData),
+      indicatorResults.regime as 'High' | 'Normal' | 'Low',
+      setupStage,
+      this.generateLifecycleRationale(setupStage),
+      rsiInterpretation
+    );
 
-      const sections = this.parseAIReportToSections(aiGeneratedReport);
+    const sections = this.parseAIReportToSections(aiGeneratedReport);
 
-      const finalReport: AnalysisReport = {
-        symbol: stockData.symbol,
-        setupStage,
-        tradeQuality: tradeQuality.tier,
-        volatilityRegime: indicatorResults.regime as 'High' | 'Normal' | 'Low',
-        confidenceScore: tradeQuality.score,
-        actionable: tradeQuality.score >= 60,
-        recommendation: this.generateRecommendation(tradeQuality, setupStage, indicators, stockData.price, support, resistance),
-        sections,
-        historicalData
-      };
+    const report: AnalysisReport = {
+      symbol: stockData.symbol,
+      setupStage,
+      scorecard,
+      volatilityRegime: indicatorResults.regime as 'High' | 'Normal' | 'Low',
+      confidenceScore: scorecard.totalScore,
+      actionable: scorecard.publishable,
+      recommendation: this.generateRecommendation(scorecard, setupStage, indicators, stockData.price, support, resistance),
+      sections,
+      historicalData
+    };
 
-      return finalReport;
-    } catch (error) {
-      console.error('Analysis failed for', symbol, ':', error instanceof Error ? error.message : 'Unknown error');
-      throw error;
-    }
+    return {
+      report,
+      stockData,
+      indicators,
+      news: newsData,
+    };
   }
 
   private static formatSentimentData(newsData: any[]): string {
@@ -92,12 +97,7 @@ export class AnalysisEngine {
     ).join('\n');
   }
 
-  private static generateLifecycleRationale(
-    setupStage: string,
-    indicators: any,
-    support: number[],
-    resistance: number[]
-  ): string {
+  private static generateLifecycleRationale(setupStage: string): string {
     switch (setupStage) {
       case 'Just Triggered':
         return 'Recent breakout confirmed with volume and indicator alignment';
@@ -170,7 +170,7 @@ export class AnalysisEngine {
   }
 
   private static generateRecommendation(
-    tradeQuality: any,
+    scorecard: any,
     setupStage: string,
     indicators: any,
     currentPrice: number,
@@ -257,20 +257,22 @@ export class AnalysisEngine {
     const rewardPercent = Math.abs((targetPrice - currentPrice) / currentPrice * 100);
     const rewardRiskRatio = rewardPercent / riskPercent;
 
-    if (tradeQuality.score >= 70) {
+    const scoreSummary = `M2M Score: ${scorecard.totalScore}/${scorecard.maxScore} (${scorecard.factorsPassed}/${scorecard.totalFactors} factors passed).`;
+
+    if (scorecard.publishable) {
       if (overallTrend === 'bullish') {
-        return `Multiple bullish indicators aligned. Historical patterns suggest bullish momentum with key support near $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% below current price) and observed resistance near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% above, ${rewardRiskRatio.toFixed(1)}:1 R/R ratio).`;
+        return `${scoreSummary} Multiple bullish indicators aligned. Historical patterns suggest bullish momentum with key support near $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% below current price) and observed resistance near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% above, ${rewardRiskRatio.toFixed(1)}:1 R/R ratio).`;
       } else if (overallTrend === 'bearish') {
-        return `Technical indicators show bearish alignment. Historical patterns suggest downward momentum with overhead resistance near $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% above current price) and observed support near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% below, ${rewardRiskRatio.toFixed(1)}:1 R/R ratio).`;
+        return `${scoreSummary} Technical indicators show bearish alignment. Historical patterns suggest downward momentum with overhead resistance near $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% above current price) and observed support near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% below, ${rewardRiskRatio.toFixed(1)}:1 R/R ratio).`;
       } else {
         const validSupport = support.filter(s => s < currentPrice * 0.99);
         const validResistance = resistance.filter(r => r > currentPrice * 1.01);
-        return `Mixed signals observed across indicators. No clear directional bias at this time. Key levels to watch: Support $${validSupport[0]?.toFixed(2) || (currentPrice * 0.95).toFixed(2)}, Resistance $${validResistance[0]?.toFixed(2) || (currentPrice * 1.05).toFixed(2)}.`;
+        return `${scoreSummary} Mixed signals observed across indicators. No clear directional bias at this time. Key levels to watch: Support $${validSupport[0]?.toFixed(2) || (currentPrice * 0.95).toFixed(2)}, Resistance $${validResistance[0]?.toFixed(2) || (currentPrice * 1.05).toFixed(2)}.`;
       }
-    } else if (tradeQuality.score >= 50) {
-      return `Moderate ${overallTrend} pattern developing. Indicators show partial alignment but lack full confirmation. Further observation warranted before drawing conclusions.`;
+    } else if (scorecard.totalScore >= 50) {
+      return `${scoreSummary} Moderate ${overallTrend} pattern developing. Indicators show partial alignment but lack full confirmation. Further observation warranted before drawing conclusions.`;
     } else {
-      return `Current indicator readings do not show a high-confidence pattern. Conditions remain mixed and may require further development before a clear signal emerges.`;
+      return `${scoreSummary} Current indicator readings do not show a high-confidence pattern. Conditions remain mixed and may require further development before a clear signal emerges.`;
     }
   }
 
