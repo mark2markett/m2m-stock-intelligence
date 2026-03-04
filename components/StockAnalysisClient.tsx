@@ -23,7 +23,7 @@ import {
   registerAppListeners,
   registerKeyboardListeners,
 } from '@/lib/capacitor';
-import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, AppError } from '@/lib/types';
+import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, AppError, OptionsData } from '@/lib/types';
 
 const M2M_DISCLAIMER = "EDUCATIONAL ANALYSIS ONLY - This is a market observation for educational purposes. It is not a recommendation to buy or sell any security. Trading options involves significant risk of loss. This analysis reflects one possible interpretation of market data and should not be acted upon without your own independent research.";
 
@@ -36,6 +36,7 @@ export function StockAnalysisClient() {
   const [currentStock, setCurrentStock] = useState<StockData | null>(null);
   const [currentIndicators, setCurrentIndicators] = useState<TechnicalIndicators | null>(null);
   const [currentNews, setCurrentNews] = useState<NewsItem[]>([]);
+  const [currentOptionsData, setCurrentOptionsData] = useState<OptionsData | undefined>(undefined);
   const [loadingStep, setLoadingStep] = useState(0);
   const [activeTab, setActiveTab] = useState<NavTab>('search');
   const [isPartialResult, setIsPartialResult] = useState(false);
@@ -87,6 +88,7 @@ export function StockAnalysisClient() {
     setCurrentStock(null);
     setCurrentIndicators(null);
     setCurrentNews([]);
+    setCurrentOptionsData(undefined);
     setIsPartialResult(false);
     setLastAnalyzedSymbol(symbol);
     startLoadingSteps();
@@ -122,6 +124,7 @@ export function StockAnalysisClient() {
       setCurrentStock(data.stockData);
       setCurrentIndicators(data.indicators);
       setCurrentNews(data.news);
+      setCurrentOptionsData(data.optionsData);
 
       if (data.partial) {
         setIsPartialResult(true);
@@ -255,6 +258,7 @@ export function StockAnalysisClient() {
                     stockData={currentStock}
                     indicators={currentIndicators}
                     newsData={currentNews}
+                    optionsData={currentOptionsData}
                     onDownloadPDF={handleDownloadPDF}
                     isMobile
                     isPartialResult={isPartialResult}
@@ -363,6 +367,7 @@ export function StockAnalysisClient() {
                   stockData={currentStock}
                   indicators={currentIndicators}
                   newsData={currentNews}
+                  optionsData={currentOptionsData}
                   onDownloadPDF={handleDownloadPDF}
                   isPartialResult={isPartialResult}
                 />

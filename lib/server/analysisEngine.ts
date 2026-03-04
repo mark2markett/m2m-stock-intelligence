@@ -13,7 +13,7 @@ export class AnalysisEngine {
    * eliminating duplicate API fetches.
    */
   static async generateAnalysis(symbol: string): Promise<AnalysisResult> {
-    const historicalLimit = 60;
+    const historicalLimit = 120;
     const newsLimit = 3;
 
     const [stockData, historicalData, newsData] = await Promise.all([
@@ -33,6 +33,9 @@ export class AnalysisEngine {
     const pivots = SupportResistanceAnalyzer.findPivotPoints(highs, lows, closes);
     const { support, resistance } = SupportResistanceAnalyzer.getKeyLevels(pivots, stockData.price);
 
+    // Fetch options data (non-blocking — null on failure)
+    const optionsData = await PolygonService.getOptionsSnapshot(symbol, stockData.price);
+
     const setupStage = TradeSetupAnalyzer.analyzeSetupStage(indicators, stockData.price, support, resistance, closes);
 
     const rsiInterpretation = TechnicalIndicators.interpretRsiForPdf(
@@ -51,7 +54,8 @@ export class AnalysisEngine {
       newsData,
       stockData.price,
       support,
-      resistance
+      resistance,
+      optionsData
     );
 
     let sections: ReportSection[];
@@ -95,6 +99,7 @@ export class AnalysisEngine {
       stockData,
       indicators,
       news: newsData,
+      optionsData: optionsData || undefined,
       partial,
       aiError,
     };

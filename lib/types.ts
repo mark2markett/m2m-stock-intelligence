@@ -96,11 +96,23 @@ export interface HistoricalDataPoint {
   volume: number;
 }
 
+export interface OptionsData {
+  putCallRatio: number;
+  totalCallVolume: number;
+  totalPutVolume: number;
+  totalCallOI: number;
+  totalPutOI: number;
+  avgImpliedVolatility: number;
+  nearMoneyIV: number;
+  contractCount: number;
+}
+
 export interface AnalysisResult {
   report: AnalysisReport;
   stockData: StockData;
   indicators: TechnicalIndicators;
   news: NewsItem[];
+  optionsData?: OptionsData;
   partial?: boolean;
   aiError?: string;
 }

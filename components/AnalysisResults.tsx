@@ -1,28 +1,31 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, BarChart3, XCircle, Newspaper, FileText } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, BarChart3, XCircle, Newspaper, FileText, LineChart } from 'lucide-react';
 import { AccordionSection } from '@/components/AccordionSection';
+import { DailyChart } from '@/components/DailyChart';
 import { useSwipe } from '@/hooks/useSwipe';
-import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem } from '@/lib/types';
+import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, OptionsData } from '@/lib/types';
 
 interface AnalysisResultsProps {
   report: AnalysisReport;
   stockData: StockData;
   indicators: TechnicalIndicators;
   newsData: NewsItem[];
+  optionsData?: OptionsData;
   onDownloadPDF: () => void;
   isMobile?: boolean;
   isPartialResult?: boolean;
 }
 
-const MOBILE_SECTIONS = ['scorecard', 'indicators', 'news', 'analysis', 'summary'] as const;
+const MOBILE_SECTIONS = ['chart', 'scorecard', 'indicators', 'news', 'analysis', 'summary'] as const;
 
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   report,
   stockData,
   indicators,
   newsData,
+  optionsData,
   onDownloadPDF,
   isMobile = false,
   isPartialResult = false,
@@ -126,7 +129,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2 text-[#E5E7EB]">
           <BarChart3 className="h-5 w-5 text-[#00E59B]" />
-          M2M 6-Factor Scorecard
+          M2M 5-Factor Scorecard
         </h3>
         <div className="flex items-center gap-2">
           {scorecard.publishable ? (
@@ -147,7 +150,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
         <div className={`flex items-center gap-1 ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-red-400'}`}>
           {scorecard.meetsMultiFactorRule ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-          4-of-6 factor rule
+          3-of-5 factor rule
         </div>
       </div>
       <div className="space-y-4">
@@ -174,6 +177,24 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       </div>
     </>
   );
+
+  const renderChart = () => {
+    if (!report.historicalData || report.historicalData.length < 20) return null;
+    return (
+      <>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#E5E7EB]">
+          <LineChart className="h-5 w-5 text-[#00E59B]" />
+          Daily Price Chart
+        </h3>
+        <DailyChart historicalData={report.historicalData} />
+        <div className="flex items-center justify-center gap-6 mt-3 text-xs text-[#6B7280]">
+          <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-[#E5E7EB] inline-block" /> Close</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-[#00E59B] inline-block" /> EMA 20</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-[#EF4444] inline-block" /> EMA 50</span>
+        </div>
+      </>
+    );
+  };
 
   const renderIndicators = () => (
     <>
@@ -228,6 +249,24 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             {indicators.cmf > 0.1 ? 'Accumulation' : indicators.cmf < -0.1 ? 'Distribution' : 'Balanced'}
           </div>
         </div>
+        {optionsData && (
+          <>
+            <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+              <div className="text-xs sm:text-sm text-[#9CA3AF]">Put/Call Ratio</div>
+              <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{optionsData.putCallRatio.toFixed(2)}</div>
+              <div className={`text-xs ${optionsData.putCallRatio < 0.7 ? 'text-[#00E59B]' : optionsData.putCallRatio > 1.0 ? 'text-red-400' : 'text-[#6B7280]'}`}>
+                {optionsData.putCallRatio < 0.7 ? 'Bullish' : optionsData.putCallRatio > 1.0 ? 'Bearish' : 'Neutral'}
+              </div>
+            </div>
+            <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+              <div className="text-xs sm:text-sm text-[#9CA3AF]">Avg IV</div>
+              <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{(optionsData.avgImpliedVolatility * 100).toFixed(1)}%</div>
+              <div className="text-xs text-[#6B7280]">
+                {optionsData.contractCount} contracts
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
@@ -329,6 +368,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         </div>
 
         {/* Accordion sections */}
+        {currentSection === 'chart' && (
+          <AccordionSection title="Daily Chart" icon={<LineChart className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
+            {renderChart() || <p className="text-sm text-[#6B7280]">Insufficient data for chart.</p>}
+          </AccordionSection>
+        )}
         {currentSection === 'scorecard' && (
           <AccordionSection title="M2M Scorecard" icon={<BarChart3 className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
             {renderScorecard()}
@@ -358,11 +402,17 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     );
   }
 
-  // --- DESKTOP LAYOUT (unchanged) ---
+  // --- DESKTOP LAYOUT ---
   return (
     <div className="space-y-6">
       {partialBanner}
       {renderHeaderCard()}
+
+      {report.historicalData && report.historicalData.length >= 20 && (
+        <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
+          {renderChart()}
+        </div>
+      )}
 
       <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
         {renderScorecard()}

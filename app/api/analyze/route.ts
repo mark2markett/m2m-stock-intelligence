@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         stockData: result.stockData,
         indicators: result.indicators,
         news: result.news,
+        optionsData: result.optionsData,
         partial: result.partial || false,
         aiError: result.aiError,
       },

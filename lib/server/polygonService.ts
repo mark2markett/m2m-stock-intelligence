@@ -1,5 +1,6 @@
 import 'server-only';
 import { CacheService } from './cacheService';
+import type { OptionsData } from '@/lib/types';
 
 const BASE_URL = 'https://api.polygon.io/v2';
 const REST_URL = 'https://api.polygon.io/v3';
@@ -106,6 +107,87 @@ export class PolygonService {
 
     CacheService.set(cacheKey, result, POLYGON_CACHE_TTL);
     return result;
+  }
+
+  static async getOptionsSnapshot(symbol: string, currentPrice: number): Promise<OptionsData | null> {
+    const cacheKey = `options-snapshot-${symbol}`;
+    const cached = CacheService.get(cacheKey);
+    if (cached) return cached as OptionsData;
+
+    try {
+      const apiKey = getApiKey();
+
+      const today = new Date();
+      const maxExpiry = new Date();
+      maxExpiry.setDate(today.getDate() + 45);
+
+      const strikeFrom = (currentPrice * 0.8).toFixed(2);
+      const strikeTo = (currentPrice * 1.2).toFixed(2);
+      const expiryTo = maxExpiry.toISOString().split('T')[0];
+
+      const url = `${REST_URL}/snapshot/options/${symbol}?strike_price.gte=${strikeFrom}&strike_price.lte=${strikeTo}&expiration_date.lte=${expiryTo}&limit=250&apikey=${apiKey}`;
+      const response = await fetch(url);
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      if (!data.results || data.results.length === 0) return null;
+
+      let totalCallVolume = 0, totalPutVolume = 0;
+      let totalCallOI = 0, totalPutOI = 0;
+      let ivSum = 0, ivCount = 0;
+      let nearMoneyIVSum = 0, nearMoneyIVCount = 0;
+
+      for (const contract of data.results) {
+        const details = contract.details;
+        const greeks = contract.greeks;
+        const dayData = contract.day;
+
+        if (!details) continue;
+
+        const isCall = details.contract_type === 'call';
+        const vol = dayData?.volume || 0;
+        const oi = contract.open_interest || 0;
+        const iv = greeks?.implied_volatility;
+
+        if (isCall) {
+          totalCallVolume += vol;
+          totalCallOI += oi;
+        } else {
+          totalPutVolume += vol;
+          totalPutOI += oi;
+        }
+
+        if (iv && iv > 0) {
+          ivSum += iv;
+          ivCount++;
+
+          // Near-money: within 5% of current price
+          const strike = details.strike_price;
+          if (strike && Math.abs(strike - currentPrice) / currentPrice < 0.05) {
+            nearMoneyIVSum += iv;
+            nearMoneyIVCount++;
+          }
+        }
+      }
+
+      const totalCallVol = totalCallVolume || 1;
+      const result: OptionsData = {
+        putCallRatio: totalPutVolume / totalCallVol,
+        totalCallVolume,
+        totalPutVolume,
+        totalCallOI,
+        totalPutOI,
+        avgImpliedVolatility: ivCount > 0 ? ivSum / ivCount : 0,
+        nearMoneyIV: nearMoneyIVCount > 0 ? nearMoneyIVSum / nearMoneyIVCount : 0,
+        contractCount: data.results.length,
+      };
+
+      CacheService.set(cacheKey, result, POLYGON_CACHE_TTL);
+      return result;
+    } catch {
+      return null;
+    }
   }
 
   static async getCompanyInfo(symbol: string) {

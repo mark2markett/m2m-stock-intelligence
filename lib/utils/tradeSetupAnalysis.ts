@@ -1,11 +1,11 @@
-import type { TechnicalIndicators as TI, M2MScorecard, M2MScoreFactor, NewsItem } from '@/lib/types';
+import type { TechnicalIndicators as TI, M2MScorecard, M2MScoreFactor, NewsItem, OptionsData } from '@/lib/types';
 import { analyzeSentiment } from '@/lib/utils/sentimentAnalysis';
 
 export type SetupStage = 'Setup Forming' | 'Just Triggered' | 'Mid Setup' | 'Late Setup';
 
 const PUBLICATION_THRESHOLD = 65;
-const REQUIRED_FACTORS_PASSED = 4;
-const TOTAL_FACTORS = 6;
+const REQUIRED_FACTORS_PASSED = 3;
+const TOTAL_FACTORS = 5;
 
 export class TradeSetupAnalyzer {
   static analyzeSetupStage(
@@ -64,17 +64,16 @@ export class TradeSetupAnalyzer {
   }
 
   /**
-   * M2M 6-Factor Scoring System
+   * M2M 5-Factor Scoring System
    *
-   * 1. Strategy Signal Strength (25 pts) - RSI/MACD/EMA alignment
-   * 2. Short Interest Alignment (20 pts) - placeholder until data source available
-   * 3. Technical Structure (20 pts) - ADX trend strength, Bollinger position, setup stage
-   * 4. Options Quality (15 pts) - placeholder until options data available
-   * 5. Risk/Reward Ratio (10 pts) - ATR-based R/R assessment
-   * 6. Catalyst Presence (10 pts) - news sentiment signal
+   * 1. Strategy Signal Strength (30 pts) - RSI/MACD/EMA alignment
+   * 2. Technical Structure (25 pts) - ADX trend strength, Bollinger position, setup stage
+   * 3. Options Quality (25 pts) - real options chain data from Polygon
+   * 4. Risk/Reward Ratio (10 pts) - ATR-based R/R assessment
+   * 5. Catalyst Presence (10 pts) - news sentiment signal
    *
    * Publication threshold: 65+ total score
-   * Multi-factor confirmation: 4 of 6 factors must pass
+   * Multi-factor confirmation: 3 of 5 factors must pass
    */
   static calculateM2MScorecard(
     indicators: TI,
@@ -83,13 +82,13 @@ export class TradeSetupAnalyzer {
     newsData: NewsItem[],
     currentPrice: number,
     support: number[],
-    resistance: number[]
+    resistance: number[],
+    optionsData?: OptionsData | null
   ): M2MScorecard {
     const factors: M2MScoreFactor[] = [
       this.scoreStrategySignalStrength(indicators),
-      this.scoreShortInterestAlignment(),
       this.scoreTechnicalStructure(indicators, setupStage, currentPrice),
-      this.scoreOptionsQuality(),
+      this.scoreOptionsQuality(optionsData || null, indicators.atr, currentPrice),
       this.scoreRiskReward(indicators, currentPrice, support, resistance),
       this.scoreCatalystPresence(newsData),
     ];
@@ -114,9 +113,9 @@ export class TradeSetupAnalyzer {
     };
   }
 
-  /** Factor 1: Strategy Signal Strength (25 pts) */
+  /** Factor 1: Strategy Signal Strength (30 pts) */
   private static scoreStrategySignalStrength(indicators: TI): M2MScoreFactor {
-    const maxPoints = 25;
+    const maxPoints = 30;
     let score = 0;
     const reasons: string[] = [];
 
@@ -131,20 +130,20 @@ export class TradeSetupAnalyzer {
     const allBearish = !emaBullish && !macdBullish && !rsiBullish;
 
     if (allBullish || allBearish) {
-      score += 15;
+      score += 18;
       reasons.push(`All 3 signals aligned ${allBullish ? 'bullish' : 'bearish'}`);
     } else {
       let aligned = 0;
       if (emaBullish) aligned++;
       if (macdBullish) aligned++;
       if (rsiBullish) aligned++;
-      score += aligned * 4;
+      score += aligned * 5;
       reasons.push(`${aligned}/3 signals aligned`);
     }
 
     // RSI in favorable zone (not extreme)
     if (rsi > 30 && rsi < 70) {
-      score += 5;
+      score += 6;
       reasons.push('RSI in healthy range');
     }
 
@@ -154,13 +153,13 @@ export class TradeSetupAnalyzer {
         (macd.macd > 0 && macd.histogram > 0) ||
         (macd.macd < 0 && macd.histogram < 0);
       if (histogramDirectionMatchesMacd) {
-        score += 5;
+        score += 6;
         reasons.push('MACD histogram confirms momentum');
       }
     }
 
     score = Math.min(score, maxPoints);
-    const passed = score >= maxPoints * 0.5; // 13+ to pass
+    const passed = score >= maxPoints * 0.5; // 15+ to pass
 
     return {
       name: 'Strategy Signal Strength',
@@ -171,46 +170,32 @@ export class TradeSetupAnalyzer {
     };
   }
 
-  /** Factor 2: Short Interest Alignment (20 pts) - Placeholder */
-  private static scoreShortInterestAlignment(): M2MScoreFactor {
-    const maxPoints = 20;
-    // Placeholder: award neutral score until short interest data is available
-    const score = 10;
-    return {
-      name: 'Short Interest Alignment',
-      maxPoints,
-      score,
-      passed: true,
-      rationale: 'Placeholder — short interest data not yet integrated. Neutral score applied.',
-    };
-  }
-
-  /** Factor 3: Technical Structure (20 pts) */
+  /** Factor 2: Technical Structure (25 pts) */
   private static scoreTechnicalStructure(
     indicators: TI,
     setupStage: SetupStage,
     currentPrice: number
   ): M2MScoreFactor {
-    const maxPoints = 20;
+    const maxPoints = 25;
     let score = 0;
     const reasons: string[] = [];
 
-    // ADX trend strength
+    // ADX trend strength (up to 8)
     if (indicators.adx > 25) {
-      score += 6;
+      score += 8;
       reasons.push('ADX confirms trend strength');
     } else if (indicators.adx > 20) {
-      score += 3;
+      score += 4;
       reasons.push('ADX shows moderate trend');
     } else {
       reasons.push('ADX weak — no clear trend');
     }
 
-    // Bollinger Band position
-    const { upper, lower, middle } = indicators.bollingerBands;
+    // Bollinger Band position (up to 5)
+    const { upper, lower } = indicators.bollingerBands;
     const bbPosition = (currentPrice - lower) / (upper - lower);
     if (bbPosition > 0.2 && bbPosition < 0.8) {
-      score += 4;
+      score += 5;
       reasons.push('Price within Bollinger mid-zone');
     } else if (bbPosition >= 0.8) {
       score += 2;
@@ -220,18 +205,18 @@ export class TradeSetupAnalyzer {
       reasons.push('Price near lower Bollinger');
     }
 
-    // Setup stage bonus
+    // Setup stage bonus (up to 9)
     switch (setupStage) {
       case 'Just Triggered':
-        score += 8;
+        score += 9;
         reasons.push('Setup just triggered');
         break;
       case 'Mid Setup':
-        score += 6;
+        score += 7;
         reasons.push('Mid-setup progression');
         break;
       case 'Setup Forming':
-        score += 3;
+        score += 4;
         reasons.push('Setup still forming');
         break;
       case 'Late Setup':
@@ -240,15 +225,15 @@ export class TradeSetupAnalyzer {
         break;
     }
 
-    // Stochastic confirmation
+    // Stochastic confirmation (up to 3)
     const { k } = indicators.stochastic;
     if (k > 20 && k < 80) {
-      score += 2;
+      score += 3;
       reasons.push('Stochastic in healthy range');
     }
 
     score = Math.min(score, maxPoints);
-    const passed = score >= maxPoints * 0.5; // 10+ to pass
+    const passed = score >= maxPoints * 0.5; // 13+ to pass
 
     return {
       name: 'Technical Structure',
@@ -259,21 +244,86 @@ export class TradeSetupAnalyzer {
     };
   }
 
-  /** Factor 4: Options Quality (15 pts) - Placeholder */
-  private static scoreOptionsQuality(): M2MScoreFactor {
-    const maxPoints = 15;
-    // Placeholder: award neutral score until options chain data is available
-    const score = 8;
+  /** Factor 3: Options Quality (25 pts) - Real options chain data */
+  private static scoreOptionsQuality(
+    optionsData: OptionsData | null,
+    atr: number,
+    currentPrice: number
+  ): M2MScoreFactor {
+    const maxPoints = 25;
+
+    if (!optionsData) {
+      return {
+        name: 'Options Quality',
+        maxPoints,
+        score: 13,
+        passed: true,
+        rationale: 'Options data unavailable — neutral score applied.',
+      };
+    }
+
+    let score = 0;
+    const reasons: string[] = [];
+
+    // Liquidity (10 pts): total volume + OI
+    const totalVolume = optionsData.totalCallVolume + optionsData.totalPutVolume;
+    const totalOI = optionsData.totalCallOI + optionsData.totalPutOI;
+    if (totalVolume > 10000 && totalOI > 50000) {
+      score += 10;
+      reasons.push('Excellent options liquidity');
+    } else if (totalVolume > 5000 && totalOI > 20000) {
+      score += 7;
+      reasons.push('Good options liquidity');
+    } else if (totalVolume > 1000 && totalOI > 5000) {
+      score += 4;
+      reasons.push('Moderate options liquidity');
+    } else {
+      score += 1;
+      reasons.push('Low options liquidity');
+    }
+
+    // Put/Call Ratio (8 pts)
+    const pcr = optionsData.putCallRatio;
+    if (pcr < 0.7) {
+      score += 8;
+      reasons.push(`Bullish P/C ratio: ${pcr.toFixed(2)}`);
+    } else if (pcr <= 1.0) {
+      score += 5;
+      reasons.push(`Neutral P/C ratio: ${pcr.toFixed(2)}`);
+    } else {
+      score += 2;
+      reasons.push(`Bearish P/C ratio: ${pcr.toFixed(2)}`);
+    }
+
+    // IV Assessment (7 pts): compare avg IV to realized vol (ATR/price)
+    const realizedVol = (atr / currentPrice) * Math.sqrt(252) * 100; // annualized %
+    const avgIV = optionsData.avgImpliedVolatility * 100;
+    const ivRatio = avgIV > 0 ? realizedVol / avgIV : 1;
+
+    if (ivRatio > 0.8 && ivRatio < 1.2) {
+      score += 7;
+      reasons.push('IV fairly priced vs realized vol');
+    } else if (ivRatio >= 1.2) {
+      score += 5;
+      reasons.push('IV below realized vol — options cheap');
+    } else {
+      score += 3;
+      reasons.push('IV elevated vs realized vol — options expensive');
+    }
+
+    score = Math.min(score, maxPoints);
+    const passed = score >= maxPoints * 0.5; // 13+ to pass
+
     return {
       name: 'Options Quality',
       maxPoints,
       score,
-      passed: true,
-      rationale: 'Placeholder — options chain data not yet integrated. Neutral score applied.',
+      passed,
+      rationale: reasons.join('; '),
     };
   }
 
-  /** Factor 5: Risk/Reward Ratio (10 pts) */
+  /** Factor 4: Risk/Reward Ratio (10 pts) */
   private static scoreRiskReward(
     indicators: TI,
     currentPrice: number,
@@ -321,7 +371,7 @@ export class TradeSetupAnalyzer {
     };
   }
 
-  /** Factor 6: Catalyst Presence (10 pts) */
+  /** Factor 5: Catalyst Presence (10 pts) */
   private static scoreCatalystPresence(newsData: NewsItem[]): M2MScoreFactor {
     const maxPoints = 10;
     let score = 0;

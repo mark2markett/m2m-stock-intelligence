@@ -99,7 +99,7 @@ export class PDFGenerator {
     // M2M 6-Factor Scorecard
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('M2M 6-Factor Scorecard', 20, yPosition);
+    doc.text('M2M 5-Factor Scorecard', 20, yPosition);
     yPosition += 8;
 
     doc.setFontSize(9);
@@ -125,7 +125,7 @@ export class PDFGenerator {
     doc.text(`Total: ${report.scorecard.totalScore}/${report.scorecard.maxScore}`, 25, yPosition);
     doc.text(`Threshold: ${report.scorecard.meetsPublicationThreshold ? 'MET' : 'NOT MET'} (65+)`, 110, yPosition);
     yPosition += 5;
-    doc.text(`Multi-Factor: ${report.scorecard.meetsMultiFactorRule ? 'MET' : 'NOT MET'} (4-of-6)`, 25, yPosition);
+    doc.text(`Multi-Factor: ${report.scorecard.meetsMultiFactorRule ? 'MET' : 'NOT MET'} (3-of-5)`, 25, yPosition);
     doc.setFont('helvetica', 'normal');
     yPosition += 10;
 
