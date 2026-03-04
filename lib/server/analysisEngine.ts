@@ -259,18 +259,18 @@ export class AnalysisEngine {
 
     if (tradeQuality.score >= 70) {
       if (overallTrend === 'bullish') {
-        return `Strong bullish setup identified. Consider long position with stop at $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% risk) and initial target near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% gain, ${rewardRiskRatio.toFixed(1)}:1 R/R).`;
+        return `Multiple bullish indicators aligned. Historical patterns suggest bullish momentum with key support near $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% below current price) and observed resistance near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% above, ${rewardRiskRatio.toFixed(1)}:1 R/R ratio).`;
       } else if (overallTrend === 'bearish') {
-        return `Strong bearish setup identified. Consider short position with stop at $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% risk) and initial target near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% gain, ${rewardRiskRatio.toFixed(1)}:1 R/R).`;
+        return `Technical indicators show bearish alignment. Historical patterns suggest downward momentum with overhead resistance near $${recommendedStop.toFixed(2)} (${riskPercent.toFixed(1)}% above current price) and observed support near $${targetPrice.toFixed(2)} (${rewardPercent.toFixed(1)}% below, ${rewardRiskRatio.toFixed(1)}:1 R/R ratio).`;
       } else {
         const validSupport = support.filter(s => s < currentPrice * 0.99);
         const validResistance = resistance.filter(r => r > currentPrice * 1.01);
-        return `Mixed signals present. Wait for clearer directional confirmation before entering positions. Monitor key levels: Support $${validSupport[0]?.toFixed(2) || (currentPrice * 0.95).toFixed(2)}, Resistance $${validResistance[0]?.toFixed(2) || (currentPrice * 1.05).toFixed(2)}.`;
+        return `Mixed signals observed across indicators. No clear directional bias at this time. Key levels to watch: Support $${validSupport[0]?.toFixed(2) || (currentPrice * 0.95).toFixed(2)}, Resistance $${validResistance[0]?.toFixed(2) || (currentPrice * 1.05).toFixed(2)}.`;
       }
     } else if (tradeQuality.score >= 50) {
-      return `Moderate ${overallTrend} setup developing. Consider small position or wait for better confirmation signals. Risk management is critical given current conditions.`;
+      return `Moderate ${overallTrend} pattern developing. Indicators show partial alignment but lack full confirmation. Further observation warranted before drawing conclusions.`;
     } else {
-      return `Current conditions do not support high-confidence trading. Monitor for clearer signals or wait for improved setup development.`;
+      return `Current indicator readings do not show a high-confidence pattern. Conditions remain mixed and may require further development before a clear signal emerges.`;
     }
   }
 

@@ -2,7 +2,23 @@ import jsPDF from 'jspdf';
 import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem } from '@/lib/types';
 import { analyzeSentiment } from '@/lib/utils/sentimentAnalysis';
 
+const M2M_DISCLAIMER = "EDUCATIONAL ANALYSIS ONLY - This is a market observation for educational purposes. It is not a recommendation to buy or sell any security. Trading options involves significant risk of loss. This analysis reflects one possible interpretation of market data and should not be acted upon without your own independent research.";
+
 export class PDFGenerator {
+  private static addPageHeader(doc: jsPDF, pageNum: number) {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 229, 155);
+    doc.text('M2M STOCK INTELLIGENCE', 20, 10);
+    doc.setTextColor(150, 150, 150);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Educational Market Analysis', 75, 10);
+    doc.text(`Page ${pageNum}`, 185, 10, { align: 'right' });
+    doc.setDrawColor(30, 41, 59);
+    doc.line(20, 12, 190, 12);
+    doc.setTextColor(0, 0, 0);
+  }
+
   static async generateReport(
     report: AnalysisReport,
     stockData: StockData,
@@ -10,6 +26,7 @@ export class PDFGenerator {
     newsData: NewsItem[]
   ): Promise<Blob> {
     const doc = new jsPDF();
+    let pageNum = 1;
     let yPosition = 20;
 
     const addWrappedText = (text: string, x: number, y: number, maxWidth: number, lineHeight: number = 6) => {
@@ -20,10 +37,14 @@ export class PDFGenerator {
       return y + (lines.length * lineHeight);
     };
 
-    // Title and Header
+    // Page 1 Header
+    this.addPageHeader(doc, pageNum);
+    yPosition = 18;
+
+    // Title
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Stock Analysis Report', 20, yPosition);
+    doc.text('M2M Stock Intelligence Report', 20, yPosition);
     yPosition += 10;
 
     doc.setFontSize(16);
@@ -33,7 +54,23 @@ export class PDFGenerator {
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.text(`Generated: ${new Date().toLocaleString()}`, 20, yPosition);
-    yPosition += 15;
+    yPosition += 10;
+
+    // Prominent disclaimer box before any analysis
+    doc.setFillColor(255, 245, 230);
+    doc.setDrawColor(200, 150, 50);
+    const disclaimerLines = doc.splitTextToSize(M2M_DISCLAIMER, 160);
+    const disclaimerHeight = disclaimerLines.length * 4 + 8;
+    doc.rect(20, yPosition, 170, disclaimerHeight, 'FD');
+    yPosition += 5;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    disclaimerLines.forEach((line: string) => {
+      doc.text(line, 25, yPosition);
+      yPosition += 4;
+    });
+    doc.setFont('helvetica', 'normal');
+    yPosition += 8;
 
     // Executive Summary Box
     doc.setDrawColor(0, 0, 0);
@@ -86,15 +123,29 @@ export class PDFGenerator {
 
     yPosition += 10;
 
-    // Add new page for detailed analysis
+    // Page 2: Detailed analysis
     doc.addPage();
-    yPosition = 20;
+    pageNum++;
+    this.addPageHeader(doc, pageNum);
+    yPosition = 18;
+
+    // Disclaimer before recommendations section
+    doc.setFillColor(255, 245, 230);
+    doc.setDrawColor(200, 150, 50);
+    doc.rect(20, yPosition, 170, 12, 'FD');
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EDUCATIONAL ANALYSIS - Not investment advice. See full disclaimer on page 1.', 25, yPosition + 5);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 18;
 
     // Detailed Analysis Sections
     report.sections.forEach((section, index) => {
       if (yPosition > 250) {
         doc.addPage();
-        yPosition = 20;
+        pageNum++;
+        this.addPageHeader(doc, pageNum);
+        yPosition = 18;
       }
 
       doc.setFontSize(12);
@@ -108,18 +159,28 @@ export class PDFGenerator {
       yPosition += 10;
     });
 
-    // Add disclaimer on final page
+    // Full disclaimer on final page
     if (yPosition > 220) {
       doc.addPage();
-      yPosition = 20;
+      pageNum++;
+      this.addPageHeader(doc, pageNum);
+      yPosition = 18;
     } else {
-      yPosition += 20;
+      yPosition += 15;
     }
 
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'italic');
-    const disclaimer = "DISCLAIMER: This analysis is for informational purposes only and does not constitute financial advice. Trading stocks involves risk and you may lose money. Past performance does not guarantee future results. Consult with a qualified financial advisor before making investment decisions.";
-    addWrappedText(disclaimer, 20, yPosition, 170, 4);
+    doc.setFillColor(255, 245, 230);
+    doc.setDrawColor(200, 150, 50);
+    const finalDisclaimerLines = doc.splitTextToSize(M2M_DISCLAIMER, 160);
+    const finalDisclaimerHeight = finalDisclaimerLines.length * 4 + 10;
+    doc.rect(20, yPosition, 170, finalDisclaimerHeight, 'FD');
+    yPosition += 5;
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    finalDisclaimerLines.forEach((line: string) => {
+      doc.text(line, 25, yPosition);
+      yPosition += 4;
+    });
 
     return doc.output('blob');
   }

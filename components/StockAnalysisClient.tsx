@@ -8,6 +8,8 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { PDFGenerator } from '@/client/pdfGenerator';
 import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem } from '@/lib/types';
 
+const M2M_DISCLAIMER = "EDUCATIONAL ANALYSIS ONLY - This is a market observation for educational purposes. It is not a recommendation to buy or sell any security. Trading options involves significant risk of loss. This analysis reflects one possible interpretation of market data and should not be acted upon without your own independent research.";
+
 export function StockAnalysisClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +66,7 @@ export function StockAnalysisClient() {
       const url = URL.createObjectURL(pdfBlob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${currentStock.symbol}-analysis-${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
+      a.download = `${currentStock.symbol}-m2m-analysis-${new Date().toLocaleDateString().replace(/\//g, '-')}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -75,18 +77,24 @@ export function StockAnalysisClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header with Logo */}
-      <header className="bg-white shadow-sm border-b border-gray-100">
+    <div className="min-h-screen bg-[#0a0e17]">
+      {/* Header */}
+      <header className="bg-[#111827] border-b border-[#1f2937]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Stock Analysis Pro</h1>
-              <p className="text-xs text-gray-600">Professional Technical Analysis & Reports</p>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-[#00E59B] font-bold text-2xl tracking-tight">M2M</span>
+                <div className="h-6 w-px bg-[#1f2937]"></div>
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-[#E5E7EB]">Stock Intelligence</h1>
+                <p className="text-xs text-[#6B7280]">Educational Market Analysis</p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <TrendingUp className="h-4 w-4" />
+            <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+              <TrendingUp className="h-4 w-4 text-[#00E59B]" />
               <span>Powered by AI & Real-Time Data</span>
             </div>
           </div>
@@ -95,26 +103,22 @@ export function StockAnalysisClient() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-8">
-          {/* Hero Section with Large Logo */}
+          {/* Hero Section */}
           <div className="text-center mb-8 px-4 md:px-0">
             <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="p-2 md:p-4 bg-white rounded-2xl shadow-2xl border-4 border-blue-300">
-                <img
-                  src="/Untitled.png"
-                  alt="Mark 2 Market Logo"
-                  className="h-12 md:h-20 w-auto"
-                />
+              <div className="p-3 md:p-4 bg-[#111827] rounded-2xl border-2 border-[#00E59B]/30 shadow-lg shadow-[#00E59B]/5">
+                <span className="text-[#00E59B] font-bold text-3xl md:text-5xl tracking-tight">M2M</span>
               </div>
               <div className="text-left">
-                <h1 className="text-3xl md:text-5xl font-bold text-gray-800 mb-2">Stock Analysis Pro</h1>
-                <h2 className="text-lg md:text-xl text-gray-600">
-                  Professional Stock Analysis Platform
+                <h1 className="text-3xl md:text-5xl font-bold text-[#E5E7EB] mb-2">Stock Intelligence</h1>
+                <h2 className="text-lg md:text-xl text-[#9CA3AF]">
+                  Educational Market Analysis Platform
                 </h2>
               </div>
             </div>
-            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
-              Generate comprehensive technical analysis reports with AI-powered insights,
-              multi-timeframe indicators, and professional PDF outputs for informed trading decisions.
+            <p className="text-base md:text-lg text-[#9CA3AF] max-w-3xl mx-auto">
+              Explore technical analysis with AI-powered observations,
+              multi-timeframe indicators, and detailed PDF reports for educational market research.
             </p>
           </div>
 
@@ -123,9 +127,16 @@ export function StockAnalysisClient() {
             <StockSearchForm onAnalyze={handleAnalyze} isLoading={isLoading} />
           </div>
 
+          {/* Disclaimer below search form */}
+          <div className="max-w-2xl mx-auto">
+            <p className="text-xs text-[#6B7280] text-center leading-relaxed px-4">
+              {M2M_DISCLAIMER}
+            </p>
+          </div>
+
           {/* Error Message */}
           {error && (
-            <div className="max-w-2xl mx-auto bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+            <div className="max-w-2xl mx-auto bg-red-900/30 border border-red-800 rounded-lg p-4 text-red-300">
               {error}
             </div>
           )}
@@ -135,40 +146,48 @@ export function StockAnalysisClient() {
             {isLoading && <LoadingSpinner />}
 
             {currentReport && currentStock && currentIndicators && !isLoading && (
-              <AnalysisResults
-                report={currentReport}
-                stockData={currentStock}
-                indicators={currentIndicators}
-                newsData={currentNews}
-                onDownloadPDF={handleDownloadPDF}
-              />
+              <>
+                {/* Disclaimer above results */}
+                <div className="mb-6 bg-[#111827] border border-[#00E59B]/20 rounded-lg p-4">
+                  <p className="text-xs text-[#00E59B]/80 text-center leading-relaxed">
+                    {M2M_DISCLAIMER}
+                  </p>
+                </div>
+                <AnalysisResults
+                  report={currentReport}
+                  stockData={currentStock}
+                  indicators={currentIndicators}
+                  newsData={currentNews}
+                  onDownloadPDF={handleDownloadPDF}
+                />
+              </>
             )}
           </div>
 
           {/* Features Overview */}
           {!currentReport && !isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto mt-12">
-              <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 text-center">
-                <BarChart3 className="h-10 w-10 text-blue-600 mx-auto mb-4" />
-                <h3 className="font-semibold text-gray-800 mb-2">Technical Analysis</h3>
-                <p className="text-gray-600 text-sm">
+              <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937] text-center">
+                <BarChart3 className="h-10 w-10 text-[#00E59B] mx-auto mb-4" />
+                <h3 className="font-semibold text-[#E5E7EB] mb-2">Technical Analysis</h3>
+                <p className="text-[#9CA3AF] text-sm">
                   Advanced technical indicators including RSI, MACD, Bollinger Bands, and more
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 text-center">
-                <TrendingUp className="h-10 w-10 text-green-600 mx-auto mb-4" />
-                <h3 className="font-semibold text-gray-800 mb-2">Setup Classification</h3>
-                <p className="text-gray-600 text-sm">
-                  Identify trade setup lifecycle stages and quality scoring
+              <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937] text-center">
+                <TrendingUp className="h-10 w-10 text-[#00E59B] mx-auto mb-4" />
+                <h3 className="font-semibold text-[#E5E7EB] mb-2">Pattern Recognition</h3>
+                <p className="text-[#9CA3AF] text-sm">
+                  Identify setup lifecycle stages and quality scoring for educational study
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-100 text-center">
-                <FileText className="h-10 w-10 text-purple-600 mx-auto mb-4" />
-                <h3 className="font-semibold text-gray-800 mb-2">PDF Reports</h3>
-                <p className="text-gray-600 text-sm">
-                  Professional PDF reports with comprehensive analysis and recommendations
+              <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937] text-center">
+                <FileText className="h-10 w-10 text-[#00E59B] mx-auto mb-4" />
+                <h3 className="font-semibold text-[#E5E7EB] mb-2">PDF Reports</h3>
+                <p className="text-[#9CA3AF] text-sm">
+                  Detailed PDF reports with comprehensive analysis for market education
                 </p>
               </div>
             </div>

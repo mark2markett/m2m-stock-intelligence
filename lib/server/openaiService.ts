@@ -46,7 +46,7 @@ export class OpenAIService {
           messages: [
             {
               role: 'system',
-              content: 'You are a professional stock analyst. Generate detailed technical analysis reports with specific sections as requested.'
+              content: 'You are an educational market data analyst for the M2M Stock Intelligence platform. Generate observational technical analysis for educational purposes only. Never use advisory language like "consider buying", "you should", "we recommend", or "take a position". Instead use observational language like "indicators suggest", "historical patterns show", "data points to". Always frame analysis as educational observation, not investment advice.'
             },
             {
               role: 'user',
@@ -120,9 +120,9 @@ Please provide a detailed analysis with exactly these sections (use **1. Section
 **5. Risk Assessment and Volatility**
 **6. Setup Quality and Timing**
 **7. Key Levels and Price Targets**
-**8. Trading Recommendations**
+**8. Educational Summary**
 
-Each section should be 2-3 sentences with specific insights based on the data provided.
+Each section should be 2-3 sentences with specific observational insights based on the data provided. Use educational framing — describe what the data shows, not what to do with it. Never say "buy", "sell", "consider", "recommend", or "take a position".
 
 IMPORTANT: Format each section exactly as shown with **1. Section Name** followed by content on new lines.`;
   }
