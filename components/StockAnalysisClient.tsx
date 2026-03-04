@@ -15,6 +15,14 @@ import { PDFGenerator } from '@/client/pdfGenerator';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import {
+  hideSplashScreen,
+  configureStatusBar,
+  hapticSuccess,
+  hapticWarning,
+  registerAppListeners,
+  registerKeyboardListeners,
+} from '@/lib/capacitor';
 import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, AppError } from '@/lib/types';
 
 const M2M_DISCLAIMER = "EDUCATIONAL ANALYSIS ONLY - This is a market observation for educational purposes. It is not a recommendation to buy or sell any security. Trading options involves significant risk of loss. This analysis reflects one possible interpretation of market data and should not be acted upon without your own independent research.";
@@ -58,6 +66,14 @@ export function StockAnalysisClient() {
   useEffect(() => {
     return clearLoadingTimers;
   }, [clearLoadingTimers]);
+
+  // Capacitor native initialization
+  useEffect(() => {
+    hideSplashScreen();
+    configureStatusBar();
+    registerKeyboardListeners();
+    registerAppListeners();
+  }, []);
 
   const handleAnalyze = useCallback(async (symbol: string) => {
     if (!isOnline) {
@@ -110,12 +126,16 @@ export function StockAnalysisClient() {
       if (data.partial) {
         setIsPartialResult(true);
         toast.warning('AI analysis unavailable. Showing technical data only.');
+        hapticWarning();
+      } else {
+        hapticSuccess();
       }
 
       if (isMobile) {
         setActiveTab('results');
       }
     } catch (err) {
+      hapticWarning();
       if (err instanceof DOMException && err.name === 'AbortError') {
         setError({ type: 'timeout', message: 'Request timed out. The server may be busy — try again.' });
       } else {
@@ -158,8 +178,10 @@ export function StockAnalysisClient() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success('PDF downloaded');
+      hapticSuccess();
     } catch {
       toast.error('Failed to generate PDF. Please try again.');
+      hapticWarning();
     }
   }, [currentReport, currentStock, currentIndicators, currentNews]);
 
@@ -187,8 +209,8 @@ export function StockAnalysisClient() {
       <div className="h-dvh bg-[#0a0e17] flex flex-col">
         <ToastProvider />
 
-        {/* Fixed header */}
-        <header className="flex-shrink-0 z-40 bg-[#111827] border-b border-[#1f2937]">
+        {/* Fixed header — safe area for notch/Dynamic Island */}
+        <header className="flex-shrink-0 z-40 bg-[#111827] border-b border-[#1f2937] pt-safe">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-2">
               <span className="text-[#00E59B] font-bold text-xl tracking-tight">M2M</span>

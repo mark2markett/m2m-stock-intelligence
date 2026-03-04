@@ -11,6 +11,15 @@
   --m2m-text: #E5E7EB;
   --m2m-text-secondary: #9CA3AF;
   --m2m-text-muted: #6B7280;
+
+  /* Safe area insets (overridden by Capacitor on native) */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
+
+  /* Keyboard height (set by Capacitor keyboard plugin) */
+  --keyboard-height: 0px;
 }
 
 html, body {
@@ -24,7 +33,23 @@ button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Safe area bottom padding utility */
+/* Safe area utilities */
 .pb-safe {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--safe-area-bottom);
+}
+
+.pt-safe {
+  padding-top: var(--safe-area-top);
+}
+
+/* Capacitor: prevent rubber-banding on iOS */
+.capacitor-ios html, .capacitor-ios body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Capacitor: ensure content stays above keyboard */
+.capacitor-ios .keyboard-open,
+.capacitor-android .keyboard-open {
+  padding-bottom: var(--keyboard-height);
 }

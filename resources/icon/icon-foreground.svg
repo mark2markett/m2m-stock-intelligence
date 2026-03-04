@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <!-- Android adaptive icon foreground (safe zone: center 66x66 of 108x108) -->
+  <text x="54" y="46" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="28" fill="#00E59B" letter-spacing="-1">M2M</text>
+  <rect x="26" y="50" width="56" height="1.5" rx="0.75" fill="#00E59B" opacity="0.4"/>
+  <text x="54" y="66" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="10" fill="#E5E7EB">STOCK</text>
+  <text x="54" y="78" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="8" fill="#9CA3AF">Intelligence</text>
+</svg>

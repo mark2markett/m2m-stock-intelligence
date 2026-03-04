@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2732 2732">
+  <!-- Universal splash screen source (will be cropped to device aspect ratios) -->
+  <rect width="2732" height="2732" fill="#0a0e17"/>
+
+  <!-- Centered M2M branding -->
+  <text x="1366" y="1200" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="bold" font-size="360" fill="#00E59B" letter-spacing="-10">M2M</text>
+
+  <!-- Accent bar -->
+  <rect x="1016" y="1260" width="700" height="10" rx="5" fill="#00E59B" opacity="0.3"/>
+
+  <!-- Subtitle -->
+  <text x="1366" y="1420" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="600" font-size="100" fill="#E5E7EB">Stock Intelligence</text>
+  <text x="1366" y="1540" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="400" font-size="64" fill="#6B7280">Educational Market Analysis</text>
+</svg>
