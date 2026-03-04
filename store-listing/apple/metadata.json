@@ -1,0 +1,13 @@
+{
+  "appName": "M2M Stock Intelligence",
+  "subtitle": "AI-Powered Stock Analysis",
+  "category": "Finance",
+  "secondaryCategory": "Education",
+  "keywords": "stock analysis,technical indicators,AI stocks,market analysis,trading education,stock screener,RSI,MACD,moving averages,stock score",
+  "promotionalText": "Get instant AI-powered analysis with 15+ technical indicators, the M2M 6-Factor Scorecard, and actionable educational insights for any US stock.",
+  "description": "M2M Stock Intelligence is a comprehensive educational stock analysis platform that combines real-time market data with artificial intelligence to help you learn about the stock market.\n\nENTER ANY US STOCK TICKER to instantly generate a full analysis including:\n\n- 15+ Technical Indicators: RSI, MACD, Bollinger Bands, Stochastic, ATR, OBV, VWAP, Fibonacci levels, and more\n- M2M 6-Factor Scorecard: A structured framework scoring Technical Momentum, Trend Strength, Volatility Profile, Volume Dynamics, Pattern Quality, and Risk/Reward — rated from 0 to 100\n- AI-Powered Pattern Recognition: Identifies chart patterns, support/resistance levels, and key price zones using OpenAI\n- News Sentiment Analysis: Aggregates and scores recent news headlines for bullish/bearish sentiment\n- Trade Setup Observations: Educational observations about potential entry zones, stop levels, and target areas\n- PDF Export: Download a comprehensive report with all charts, indicators, and AI analysis\n\nDATA SOURCES:\n- Polygon.io for real-time and historical stock data\n- OpenAI for intelligent analysis and pattern interpretation\n\nDESIGNED FOR LEARNING:\nWhether you're a beginner studying technical analysis or an experienced trader exploring new perspectives, M2M Stock Intelligence provides structured, educational market observations. Every analysis includes clear explanations of what each indicator means and why it matters.\n\nIMPORTANT DISCLAIMER:\nThis app is for educational purposes only. It is not a recommendation to buy or sell any security. Trading involves significant risk of loss. Always conduct your own independent research before making investment decisions.\n\nNo account required. No ads. No tracking. Just enter a ticker and learn.",
+  "privacyPolicyUrl": "https://singlestock.mark2markets.com/privacy",
+  "supportUrl": "https://singlestock.mark2markets.com/support",
+  "marketingUrl": "https://singlestock.mark2markets.com",
+  "copyright": "2026 Mark2Market LLC"
+}

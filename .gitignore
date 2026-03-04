@@ -32,6 +32,11 @@ yarn-error.log*
 # Vercel
 .vercel
 
+# Android signing
+keystore.properties
+*.jks
+*.keystore
+
 # Capacitor native platforms (regenerated via `npx cap add`)
 ios/
 android/

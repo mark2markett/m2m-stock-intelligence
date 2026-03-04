@@ -1,0 +1,15 @@
+{
+  "appName": "M2M Stock Intelligence",
+  "shortDescription": "AI-powered educational stock analysis with 15+ technical indicators and the M2M 6-Factor Scorecard.",
+  "fullDescription": "M2M Stock Intelligence is a comprehensive educational stock analysis platform that combines real-time market data with artificial intelligence to help you learn about the stock market.\n\nENTER ANY US STOCK TICKER to instantly generate a full analysis including:\n\n★ 15+ Technical Indicators — RSI, MACD, Bollinger Bands, Stochastic, ATR, OBV, VWAP, Fibonacci levels, and more\n\n★ M2M 6-Factor Scorecard — A structured framework scoring Technical Momentum, Trend Strength, Volatility Profile, Volume Dynamics, Pattern Quality, and Risk/Reward — rated from 0 to 100\n\n★ AI-Powered Pattern Recognition — Identifies chart patterns, support/resistance levels, and key price zones using OpenAI\n\n★ News Sentiment Analysis — Aggregates and scores recent news headlines for bullish/bearish sentiment\n\n★ Trade Setup Observations — Educational observations about potential entry zones, stop levels, and target areas\n\n★ PDF Export — Download a comprehensive report with all charts, indicators, and AI analysis\n\nDATA SOURCES:\n• Polygon.io for real-time and historical stock data\n• OpenAI for intelligent analysis and pattern interpretation\n\nDESIGNED FOR LEARNING:\nWhether you're a beginner studying technical analysis or an experienced trader exploring new perspectives, M2M Stock Intelligence provides structured, educational market observations.\n\nIMPORTANT DISCLAIMER:\nThis app is for educational purposes only. It is not a recommendation to buy or sell any security. Trading involves significant risk of loss. Always conduct your own independent research before making investment decisions.\n\nNo account required. No ads. No tracking. Just enter a ticker and learn.",
+  "category": "Finance",
+  "tags": ["stock analysis", "technical indicators", "AI", "market education", "trading"],
+  "contactEmail": "support@mark2markets.com",
+  "contactWebsite": "https://singlestock.mark2markets.com",
+  "privacyPolicyUrl": "https://singlestock.mark2markets.com/privacy",
+  "defaultLanguage": "en-US",
+  "targetCountries": ["US"],
+  "pricing": "free",
+  "containsAds": false,
+  "inAppPurchases": false
+}

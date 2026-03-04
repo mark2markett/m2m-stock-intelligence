@@ -10,8 +10,8 @@ const config: CapacitorConfig = {
     // Development: uncomment to load from local Next.js dev server
     // url: 'http://localhost:3000',
 
-    // Production: set to your deployed Next.js URL
-    // url: 'https://stockintelligence.mark2market.com',
+    // Production: deployed Next.js URL
+    url: 'https://singlestock.mark2markets.com',
 
     androidScheme: 'https',
   },

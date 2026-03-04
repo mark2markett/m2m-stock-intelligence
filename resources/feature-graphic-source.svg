@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0e17"/>
+      <stop offset="100%" style="stop-color:#111827"/>
+    </linearGradient>
+    <linearGradient id="chartLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00E59B;stop-opacity:0.3"/>
+      <stop offset="50%" style="stop-color:#00E59B;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#00E59B;stop-opacity:0.3"/>
+    </linearGradient>
+    <linearGradient id="chartFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00E59B;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#00E59B;stop-opacity:0"/>
+    </linearGradient>
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.2"/>
+      <stop offset="50%" style="stop-color:#3B82F6;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0.2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="500" fill="url(#bg)"/>
+
+  <!-- Subtle grid -->
+  <g stroke="#1f2937" stroke-width="0.5" opacity="0.5">
+    <line x1="0" y1="100" x2="1024" y2="100"/>
+    <line x1="0" y1="200" x2="1024" y2="200"/>
+    <line x1="0" y1="300" x2="1024" y2="300"/>
+    <line x1="0" y1="400" x2="1024" y2="400"/>
+    <line x1="200" y1="0" x2="200" y2="500"/>
+    <line x1="400" y1="0" x2="400" y2="500"/>
+    <line x1="600" y1="0" x2="600" y2="500"/>
+    <line x1="800" y1="0" x2="800" y2="500"/>
+  </g>
+
+  <!-- Chart area fill -->
+  <path d="M80,350 L150,320 L220,340 L290,280 L360,300 L430,240 L500,260 L570,200 L640,220 L710,180 L780,160 L850,170 L920,140 L920,420 L80,420 Z" fill="url(#chartFill)"/>
+
+  <!-- Main chart line (uptrend) -->
+  <path d="M80,350 L150,320 L220,340 L290,280 L360,300 L430,240 L500,260 L570,200 L640,220 L710,180 L780,160 L850,170 L920,140" fill="none" stroke="url(#chartLine)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Secondary chart line (moving average) -->
+  <path d="M80,340 L150,325 L220,310 L290,300 L360,285 L430,270 L500,255 L570,240 L640,225 L710,210 L780,195 L850,185 L920,175" fill="none" stroke="url(#accentLine)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="8,4"/>
+
+  <!-- Candlestick hints -->
+  <g opacity="0.4">
+    <rect x="288" y="275" width="4" height="30" rx="1" fill="#00E59B"/>
+    <rect x="428" y="235" width="4" height="25" rx="1" fill="#00E59B"/>
+    <rect x="568" y="195" width="4" height="30" rx="1" fill="#00E59B"/>
+    <rect x="708" y="175" width="4" height="20" rx="1" fill="#EF4444"/>
+    <rect x="848" y="165" width="4" height="20" rx="1" fill="#00E59B"/>
+  </g>
+
+  <!-- Data point dots -->
+  <circle cx="570" cy="200" r="4" fill="#00E59B" opacity="0.8"/>
+  <circle cx="710" cy="180" r="4" fill="#00E59B" opacity="0.8"/>
+  <circle cx="920" cy="140" r="4" fill="#00E59B"/>
+  <circle cx="920" cy="140" r="8" fill="none" stroke="#00E59B" stroke-width="1" opacity="0.4"/>
+
+  <!-- App branding -->
+  <text x="512" y="80" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="bold" fill="white" text-anchor="middle" letter-spacing="1">M2M Stock Intelligence</text>
+  <text x="512" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#9CA3AF" text-anchor="middle">AI-Powered Educational Stock Analysis</text>
+
+  <!-- Decorative score badge -->
+  <g transform="translate(890, 60)">
+    <circle cx="0" cy="0" r="28" fill="#0a0e17" stroke="#00E59B" stroke-width="2" opacity="0.8"/>
+    <text x="0" y="-4" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#00E59B" text-anchor="middle">87</text>
+    <text x="0" y="12" font-family="system-ui, sans-serif" font-size="8" fill="#6B7280" text-anchor="middle">M2M Score</text>
+  </g>
+
+  <!-- Bottom tagline bar -->
+  <rect x="0" y="450" width="1024" height="50" fill="#0a0e17" opacity="0.8"/>
+  <text x="512" y="480" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="#6B7280" text-anchor="middle">15+ Indicators  •  6-Factor Scorecard  •  AI Analysis  •  PDF Export</text>
+</svg>

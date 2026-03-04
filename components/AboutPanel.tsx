@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, Database, Cpu, AlertTriangle } from 'lucide-react';
+import { BarChart3, Database, Cpu, AlertTriangle, Shield, FileText, LifeBuoy } from 'lucide-react';
 
 export function AboutPanel() {
   return (
@@ -38,6 +38,33 @@ export function AboutPanel() {
               <p className="text-xs text-[#6B7280]">AI-generated analysis and pattern interpretation</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
+        <h4 className="font-semibold text-[#E5E7EB] mb-3">Legal &amp; Support</h4>
+        <div className="space-y-2">
+          <a
+            href="/privacy"
+            className="flex items-center gap-3 text-sm text-[#9CA3AF] hover:text-[#00E59B] transition-colors"
+          >
+            <Shield className="h-4 w-4 text-[#00E59B]" />
+            Privacy Policy
+          </a>
+          <a
+            href="/terms"
+            className="flex items-center gap-3 text-sm text-[#9CA3AF] hover:text-[#00E59B] transition-colors"
+          >
+            <FileText className="h-4 w-4 text-[#00E59B]" />
+            Terms of Service
+          </a>
+          <a
+            href="/support"
+            className="flex items-center gap-3 text-sm text-[#9CA3AF] hover:text-[#00E59B] transition-colors"
+          >
+            <LifeBuoy className="h-4 w-4 text-[#00E59B]" />
+            Support &amp; FAQ
+          </a>
         </div>
       </div>
 

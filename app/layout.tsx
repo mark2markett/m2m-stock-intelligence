@@ -3,6 +3,7 @@ import { AppErrorBoundary } from '@/components/ErrorBoundary';
 import './globals.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://singlestock.mark2markets.com'),
   title: 'M2M Stock Intelligence | Educational Market Analysis',
   description: 'Educational stock analysis platform with AI-powered technical indicators, pattern recognition, and observational market insights by Mark2Market.',
   keywords: ['stock analysis', 'technical indicators', 'market education', 'Mark2Market', 'M2M'],
