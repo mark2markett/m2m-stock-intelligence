@@ -13,7 +13,18 @@
   --m2m-text-muted: #6B7280;
 }
 
-body {
+html, body {
+  overscroll-behavior-y: none;
   background-color: var(--m2m-bg);
   color: var(--m2m-text);
+}
+
+/* Remove tap highlight on mobile */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Safe area bottom padding utility */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }

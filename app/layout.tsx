@@ -1,4 +1,5 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { AppErrorBoundary } from '@/components/ErrorBoundary';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -24,6 +25,12 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -31,7 +38,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-[#0a0e17] text-[#E5E7EB] antialiased">{children}</body>
+      <body className="bg-[#0a0e17] text-[#E5E7EB] antialiased">
+        <AppErrorBoundary>{children}</AppErrorBoundary>
+      </body>
     </html>
   );
 }

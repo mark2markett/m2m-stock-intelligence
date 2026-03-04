@@ -36,13 +36,13 @@ export const StockSearchForm: React.FC<StockSearchFormProps> = ({ onAnalyze, isL
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="relative">
-          <Search className="absolute left-4 top-3 h-5 w-5 text-[#6B7280]" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-[#6B7280]" />
           <input
             type="text"
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
             placeholder="Enter stock symbol (e.g., AAPL)"
-            className="w-full pl-12 pr-4 py-3 bg-[#0a0e17] border border-[#1f2937] rounded-lg focus:ring-2 focus:ring-[#00E59B] focus:border-transparent transition-all duration-200 text-base md:text-lg text-[#E5E7EB] placeholder-[#6B7280]"
+            className="w-full pl-12 pr-4 min-h-[44px] sm:min-h-0 py-3 bg-[#0a0e17] border border-[#1f2937] rounded-lg focus:ring-2 focus:ring-[#00E59B] focus:border-transparent transition-all duration-200 text-base md:text-lg text-[#E5E7EB] placeholder-[#6B7280]"
             disabled={isLoading}
           />
         </div>
@@ -50,7 +50,7 @@ export const StockSearchForm: React.FC<StockSearchFormProps> = ({ onAnalyze, isL
         <button
           type="submit"
           disabled={isLoading || !symbol.trim()}
-          className="w-full bg-[#00E59B] hover:bg-[#00cc8a] text-[#0a0e17] py-3 md:py-4 px-6 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full min-h-[44px] sm:min-h-0 bg-[#00E59B] hover:bg-[#00cc8a] text-[#0a0e17] py-3 md:py-4 px-6 rounded-lg font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <>
@@ -73,7 +73,7 @@ export const StockSearchForm: React.FC<StockSearchFormProps> = ({ onAnalyze, isL
             <button
               key={stock}
               onClick={() => setSymbol(stock)}
-              className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-[#1f2937] hover:bg-[#374151] text-[#E5E7EB] rounded-md transition-colors duration-150"
+              className="min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-[#1f2937] hover:bg-[#374151] text-[#E5E7EB] rounded-md transition-colors duration-150"
               disabled={isLoading}
             >
               {stock}

@@ -1,41 +1,103 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { BarChart3, TrendingUp, FileText } from 'lucide-react';
+import { toast } from 'sonner';
 import { StockSearchForm } from '@/components/StockSearchForm';
 import { AnalysisResults } from '@/components/AnalysisResults';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
+import { BottomNav, type NavTab } from '@/components/BottomNav';
+import { ToastProvider } from '@/components/Toast';
+import { PullToRefreshIndicator } from '@/components/PullToRefreshIndicator';
+import { AboutPanel } from '@/components/AboutPanel';
 import { PDFGenerator } from '@/client/pdfGenerator';
-import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem } from '@/lib/types';
+import { useIsMobile } from '@/hooks/useIsMobile';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, AppError } from '@/lib/types';
 
 const M2M_DISCLAIMER = "EDUCATIONAL ANALYSIS ONLY - This is a market observation for educational purposes. It is not a recommendation to buy or sell any security. Trading options involves significant risk of loss. This analysis reflects one possible interpretation of market data and should not be acted upon without your own independent research.";
 
+const LOADING_STEP_DELAYS = [0, 1500, 3000, 7000];
+
 export function StockAnalysisClient() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
   const [currentReport, setCurrentReport] = useState<AnalysisReport | null>(null);
   const [currentStock, setCurrentStock] = useState<StockData | null>(null);
   const [currentIndicators, setCurrentIndicators] = useState<TechnicalIndicators | null>(null);
   const [currentNews, setCurrentNews] = useState<NewsItem[]>([]);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [activeTab, setActiveTab] = useState<NavTab>('search');
+  const [isPartialResult, setIsPartialResult] = useState(false);
+  const [lastAnalyzedSymbol, setLastAnalyzedSymbol] = useState('');
 
-  const handleAnalyze = async (symbol: string) => {
+  const isMobile = useIsMobile();
+  const isOnline = useOnlineStatus();
+  const mainRef = useRef<HTMLDivElement>(null);
+  const loadingTimers = useRef<NodeJS.Timeout[]>([]);
+
+  const hasResults = !!(currentReport && currentStock && currentIndicators);
+
+  const clearLoadingTimers = useCallback(() => {
+    loadingTimers.current.forEach(clearTimeout);
+    loadingTimers.current = [];
+  }, []);
+
+  const startLoadingSteps = useCallback(() => {
+    clearLoadingTimers();
+    setLoadingStep(0);
+    LOADING_STEP_DELAYS.forEach((delay, index) => {
+      if (index === 0) return;
+      const timer = setTimeout(() => setLoadingStep(index), delay);
+      loadingTimers.current.push(timer);
+    });
+  }, [clearLoadingTimers]);
+
+  useEffect(() => {
+    return clearLoadingTimers;
+  }, [clearLoadingTimers]);
+
+  const handleAnalyze = useCallback(async (symbol: string) => {
+    if (!isOnline) {
+      setError({ type: 'offline', message: 'No internet connection. Check your network and try again.' });
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
     setCurrentReport(null);
     setCurrentStock(null);
     setCurrentIndicators(null);
     setCurrentNews([]);
+    setIsPartialResult(false);
+    setLastAnalyzedSymbol(symbol);
+    startLoadingSteps();
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ symbol }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeout);
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.error || `Analysis failed (${response.status})`);
+        const appError: AppError = {
+          type: data.type || 'unknown',
+          message: data.error || `Analysis failed (${response.status})`,
+          retryAfter: data.retryAfter,
+          suggestions: data.suggestions,
+        };
+        setError(appError);
+        return;
       }
 
       const data = await response.json();
@@ -44,15 +106,39 @@ export function StockAnalysisClient() {
       setCurrentStock(data.stockData);
       setCurrentIndicators(data.indicators);
       setCurrentNews(data.news);
+
+      if (data.partial) {
+        setIsPartialResult(true);
+        toast.warning('AI analysis unavailable. Showing technical data only.');
+      }
+
+      if (isMobile) {
+        setActiveTab('results');
+      }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(message);
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setError({ type: 'timeout', message: 'Request timed out. The server may be busy — try again.' });
+      } else {
+        setError({ type: 'unknown', message: err instanceof Error ? err.message : 'Unknown error occurred' });
+      }
     } finally {
+      clearTimeout(timeout);
+      clearLoadingTimers();
       setIsLoading(false);
     }
-  };
+  }, [isOnline, isMobile, startLoadingSteps, clearLoadingTimers]);
 
-  const handleDownloadPDF = async () => {
+  const handleRetry = useCallback(() => {
+    if (lastAnalyzedSymbol) {
+      handleAnalyze(lastAnalyzedSymbol);
+    }
+  }, [lastAnalyzedSymbol, handleAnalyze]);
+
+  const handleRetryWithSymbol = useCallback((symbol: string) => {
+    handleAnalyze(symbol);
+  }, [handleAnalyze]);
+
+  const handleDownloadPDF = useCallback(async () => {
     if (!currentReport || !currentStock || !currentIndicators) return;
 
     try {
@@ -71,14 +157,111 @@ export function StockAnalysisClient() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } catch (err) {
-      setError('Failed to generate PDF. Please try again.');
+      toast.success('PDF downloaded');
+    } catch {
+      toast.error('Failed to generate PDF. Please try again.');
     }
-  };
+  }, [currentReport, currentStock, currentIndicators, currentNews]);
 
+  const handleTabChange = useCallback((tab: NavTab) => {
+    if (tab === 'pdf') {
+      handleDownloadPDF();
+      return;
+    }
+    setActiveTab(tab);
+  }, [handleDownloadPDF]);
+
+  const handlePullToRefresh = useCallback(async () => {
+    if (lastAnalyzedSymbol) {
+      await handleAnalyze(lastAnalyzedSymbol);
+    }
+  }, [lastAnalyzedSymbol, handleAnalyze]);
+
+  const { isPulling, pullDistance, isRefreshing } = usePullToRefresh(mainRef, {
+    onRefresh: handlePullToRefresh,
+  });
+
+  // --- MOBILE LAYOUT ---
+  if (isMobile) {
+    return (
+      <div className="h-dvh bg-[#0a0e17] flex flex-col">
+        <ToastProvider />
+
+        {/* Fixed header */}
+        <header className="flex-shrink-0 z-40 bg-[#111827] border-b border-[#1f2937]">
+          <div className="flex items-center justify-between px-4 h-14">
+            <div className="flex items-center gap-2">
+              <span className="text-[#00E59B] font-bold text-xl tracking-tight">M2M</span>
+              <div className="h-5 w-px bg-[#1f2937]" />
+              <span className="text-sm font-semibold text-[#E5E7EB]">Stock Intelligence</span>
+            </div>
+            <TrendingUp className="h-4 w-4 text-[#00E59B]" />
+          </div>
+        </header>
+
+        {/* Scrollable content area */}
+        <div ref={mainRef} className="flex-1 overflow-y-auto min-h-0">
+          <PullToRefreshIndicator
+            isPulling={isPulling}
+            pullDistance={pullDistance}
+            isRefreshing={isRefreshing}
+          />
+
+          <main className="px-4 py-4 pb-20">
+            {activeTab === 'search' && (
+              <div className="space-y-6">
+                <StockSearchForm onAnalyze={handleAnalyze} isLoading={isLoading} />
+                <p className="text-xs text-[#6B7280] text-center leading-relaxed">
+                  {M2M_DISCLAIMER}
+                </p>
+                {error && (
+                  <ErrorDisplay
+                    error={error}
+                    onRetry={handleRetry}
+                    onRetryWithSymbol={handleRetryWithSymbol}
+                  />
+                )}
+                {isLoading && <LoadingSpinner currentStep={loadingStep} />}
+              </div>
+            )}
+
+            {activeTab === 'results' && (
+              <div className="space-y-4">
+                {hasResults && !isLoading ? (
+                  <AnalysisResults
+                    report={currentReport}
+                    stockData={currentStock}
+                    indicators={currentIndicators}
+                    newsData={currentNews}
+                    onDownloadPDF={handleDownloadPDF}
+                    isMobile
+                    isPartialResult={isPartialResult}
+                  />
+                ) : isLoading ? (
+                  <LoadingSpinner currentStep={loadingStep} />
+                ) : (
+                  <div className="text-center py-12">
+                    <BarChart3 className="h-12 w-12 text-[#374151] mx-auto mb-3" />
+                    <p className="text-[#6B7280]">No results yet. Search for a stock to begin.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'about' && <AboutPanel />}
+          </main>
+        </div>
+
+        <BottomNav activeTab={activeTab} onTabChange={handleTabChange} hasResults={hasResults} />
+      </div>
+    );
+  }
+
+  // --- DESKTOP LAYOUT (unchanged structure) ---
   return (
     <div className="min-h-screen bg-[#0a0e17]">
-      {/* Header */}
+      <ToastProvider />
+
       <header className="bg-[#111827] border-b border-[#1f2937]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -92,7 +275,6 @@ export function StockAnalysisClient() {
                 <p className="text-xs text-[#6B7280]">Educational Market Analysis</p>
               </div>
             </div>
-
             <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
               <TrendingUp className="h-4 w-4 text-[#00E59B]" />
               <span>Powered by AI & Real-Time Data</span>
@@ -134,20 +316,21 @@ export function StockAnalysisClient() {
             </p>
           </div>
 
-          {/* Error Message */}
+          {/* Error Display */}
           {error && (
-            <div className="max-w-2xl mx-auto bg-red-900/30 border border-red-800 rounded-lg p-4 text-red-300">
-              {error}
-            </div>
+            <ErrorDisplay
+              error={error}
+              onRetry={handleRetry}
+              onRetryWithSymbol={handleRetryWithSymbol}
+            />
           )}
 
           {/* Results */}
           <div className="max-w-6xl mx-auto">
-            {isLoading && <LoadingSpinner />}
+            {isLoading && <LoadingSpinner currentStep={loadingStep} />}
 
-            {currentReport && currentStock && currentIndicators && !isLoading && (
+            {hasResults && !isLoading && (
               <>
-                {/* Disclaimer above results */}
                 <div className="mb-6 bg-[#111827] border border-[#00E59B]/20 rounded-lg p-4">
                   <p className="text-xs text-[#00E59B]/80 text-center leading-relaxed">
                     {M2M_DISCLAIMER}
@@ -159,6 +342,7 @@ export function StockAnalysisClient() {
                   indicators={currentIndicators}
                   newsData={currentNews}
                   onDownloadPDF={handleDownloadPDF}
+                  isPartialResult={isPartialResult}
                 />
               </>
             )}
@@ -174,7 +358,6 @@ export function StockAnalysisClient() {
                   Advanced technical indicators including RSI, MACD, Bollinger Bands, and more
                 </p>
               </div>
-
               <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937] text-center">
                 <TrendingUp className="h-10 w-10 text-[#00E59B] mx-auto mb-4" />
                 <h3 className="font-semibold text-[#E5E7EB] mb-2">Pattern Recognition</h3>
@@ -182,7 +365,6 @@ export function StockAnalysisClient() {
                   Identify setup lifecycle stages and quality scoring for educational study
                 </p>
               </div>
-
               <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937] text-center">
                 <FileText className="h-10 w-10 text-[#00E59B] mx-auto mb-4" />
                 <h3 className="font-semibold text-[#E5E7EB] mb-2">PDF Reports</h3>

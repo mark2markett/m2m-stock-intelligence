@@ -54,20 +54,29 @@ export class AnalysisEngine {
       resistance
     );
 
-    const aiGeneratedReport = await OpenAIService.generateAnalysisReport(
-      symbol,
-      stockData,
-      indicators,
-      support,
-      resistance,
-      this.formatSentimentData(newsData),
-      indicatorResults.regime as 'High' | 'Normal' | 'Low',
-      setupStage,
-      this.generateLifecycleRationale(setupStage),
-      rsiInterpretation
-    );
+    let sections: ReportSection[];
+    let partial = false;
+    let aiError: string | undefined;
 
-    const sections = this.parseAIReportToSections(aiGeneratedReport);
+    try {
+      const aiGeneratedReport = await OpenAIService.generateAnalysisReport(
+        symbol,
+        stockData,
+        indicators,
+        support,
+        resistance,
+        this.formatSentimentData(newsData),
+        indicatorResults.regime as 'High' | 'Normal' | 'Low',
+        setupStage,
+        this.generateLifecycleRationale(setupStage),
+        rsiInterpretation
+      );
+      sections = this.parseAIReportToSections(aiGeneratedReport);
+    } catch (err) {
+      partial = true;
+      aiError = err instanceof Error ? err.message : 'AI analysis unavailable';
+      sections = this.generateFallbackSections(indicators, scorecard, setupStage, stockData.price, support, resistance);
+    }
 
     const report: AnalysisReport = {
       symbol: stockData.symbol,
@@ -86,6 +95,8 @@ export class AnalysisEngine {
       stockData,
       indicators,
       news: newsData,
+      partial,
+      aiError,
     };
   }
 
@@ -301,5 +312,37 @@ export class AnalysisEngine {
     }
 
     return baseMultiplier;
+  }
+
+  private static generateFallbackSections(
+    indicators: any,
+    scorecard: any,
+    setupStage: string,
+    price: number,
+    support: number[],
+    resistance: number[]
+  ): ReportSection[] {
+    const rsiStatus = indicators.rsi > 70 ? 'overbought' : indicators.rsi < 30 ? 'oversold' : 'neutral';
+    const macdStatus = indicators.macd.macd > indicators.macd.signal ? 'bullish crossover' : 'bearish crossover';
+    const trendStatus = indicators.ema20 > indicators.ema50 ? 'bullish (EMA20 > EMA50)' : 'bearish (EMA20 < EMA50)';
+
+    return [
+      {
+        title: 'Technical Summary',
+        content: `RSI(14): ${indicators.rsi.toFixed(1)} (${rsiStatus}). MACD: ${indicators.macd.macd.toFixed(3)} showing ${macdStatus}. Trend alignment: ${trendStatus}. ADX: ${indicators.adx.toFixed(1)} indicating ${indicators.adx > 25 ? 'strong' : 'weak'} trend strength. CMF: ${indicators.cmf.toFixed(3)} showing ${indicators.cmf > 0.1 ? 'accumulation' : indicators.cmf < -0.1 ? 'distribution' : 'balanced flow'}.`
+      },
+      {
+        title: 'Key Levels',
+        content: `Current price: $${price.toFixed(2)}. Setup stage: ${setupStage}. Support levels: ${support.slice(0, 3).map(s => '$' + s.toFixed(2)).join(', ') || 'N/A'}. Resistance levels: ${resistance.slice(0, 3).map(r => '$' + r.toFixed(2)).join(', ') || 'N/A'}.`
+      },
+      {
+        title: 'Scorecard Overview',
+        content: `M2M Score: ${scorecard.totalScore}/${scorecard.maxScore}. Factors passed: ${scorecard.factorsPassed}/${scorecard.totalFactors}. Publication threshold ${scorecard.meetsPublicationThreshold ? 'met' : 'not met'}. Multi-factor rule ${scorecard.meetsMultiFactorRule ? 'met' : 'not met'}.`
+      },
+      {
+        title: 'Note',
+        content: 'AI-generated detailed analysis was unavailable for this request. The technical data and scorecard above are computed from real market data. Re-run the analysis to attempt a full AI-powered report.'
+      }
+    ];
   }
 }

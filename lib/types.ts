@@ -101,4 +101,16 @@ export interface AnalysisResult {
   stockData: StockData;
   indicators: TechnicalIndicators;
   news: NewsItem[];
+  partial?: boolean;
+  aiError?: string;
+}
+
+export type ErrorType = 'invalid_symbol' | 'rate_limit' | 'offline' | 'timeout' | 'server_error' | 'unknown';
+
+export interface AppError {
+  type: ErrorType;
+  message: string;
+  retryAfter?: number;
+  suggestions?: string[];
+  partialData?: boolean;
 }
