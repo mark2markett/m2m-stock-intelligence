@@ -9,6 +9,7 @@ const redis = new Redis({
 
 const KEYS = {
   scanStatus: (date: string) => `scan:status:${date}`,
+  sliceResult: (date: string, start: number, end: number) => `scan:slice:${date}:${start}-${end}`,
   batchResult: (date: string, batch: number) => `scan:batch:${date}:${batch}`,
   latestResult: 'scan:latest',
   latestDate: 'scan:latest-date',
@@ -35,7 +36,17 @@ export class KVStore {
     return this.getScanStatus(date);
   }
 
-  // --- Batch Results ---
+  // --- Slice Results ---
+
+  static async setSliceResults(date: string, start: number, end: number, results: ScannerStockResult[]): Promise<void> {
+    await redis.set(KEYS.sliceResult(date, start, end), JSON.stringify(results), { ex: SCAN_TTL_SECONDS });
+  }
+
+  static async getSliceResults(date: string, start: number, end: number): Promise<ScannerStockResult[] | null> {
+    return redis.get<ScannerStockResult[]>(KEYS.sliceResult(date, start, end));
+  }
+
+  // --- Batch Results (legacy, kept for compatibility) ---
 
   static async setBatchResults(date: string, batch: number, results: ScannerStockResult[]): Promise<void> {
     await redis.set(KEYS.batchResult(date, batch), JSON.stringify(results), { ex: SCAN_TTL_SECONDS });

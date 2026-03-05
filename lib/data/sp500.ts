@@ -1,6 +1,6 @@
 import type { SP500Stock } from '@/lib/types';
 
-const ALL_SP500: SP500Stock[] = [
+export const SP500_CONSTITUENTS: SP500Stock[] = [
   { symbol: 'A', name: 'Agilent Technologies', sector: 'Health Care' },
   { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Information Technology' },
   { symbol: 'ABBV', name: 'AbbVie Inc.', sector: 'Health Care' },
@@ -505,6 +505,3 @@ const ALL_SP500: SP500Stock[] = [
   { symbol: 'ZBRA', name: 'Zebra Technologies', sector: 'Information Technology' },
   { symbol: 'ZTS', name: 'Zoetis Inc.', sector: 'Health Care' },
 ];
-
-// Limit to first 120 stocks to stay within Vercel function timeout
-export const SP500_CONSTITUENTS = ALL_SP500.slice(0, 120);
