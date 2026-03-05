@@ -24,6 +24,9 @@ export function ScannerPageClient() {
     minScore: 0,
     sortBy: 'm2mScore',
     sortDir: 'desc',
+    aiQuality: '',
+    earlyStageOnly: false,
+    minConfidence: 0,
   });
 
   // Fetch results
@@ -120,6 +123,18 @@ export function ScannerPageClient() {
 
     if (filters.minScore > 0) {
       stocks = stocks.filter(s => s.m2mScore >= filters.minScore);
+    }
+
+    if (filters.aiQuality) {
+      stocks = stocks.filter(s => s.aiSetupQuality === filters.aiQuality);
+    }
+
+    if (filters.earlyStageOnly) {
+      stocks = stocks.filter(s => s.aiEarlyStage);
+    }
+
+    if (filters.minConfidence > 0) {
+      stocks = stocks.filter(s => s.aiConfidence >= filters.minConfidence);
     }
 
     // Sort

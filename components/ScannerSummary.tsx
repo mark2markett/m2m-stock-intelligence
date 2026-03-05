@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, CheckCircle, Zap, PieChart } from 'lucide-react';
+import { BarChart3, CheckCircle, Zap, Star, PieChart } from 'lucide-react';
 import type { ScannerResult } from '@/lib/types';
 
 interface ScannerSummaryProps {
@@ -24,23 +24,30 @@ export function ScannerSummary({ result }: ScannerSummaryProps) {
       color: '#22c55e',
     },
     {
-      label: 'Just Triggered',
-      value: result.justTriggered.length,
-      sub: 'actionable now',
+      label: 'Early Stage',
+      value: result.earlyStage.length,
+      sub: 'AI-detected forming setups',
       icon: Zap,
       color: '#f59e0b',
+    },
+    {
+      label: 'High Quality',
+      value: result.highQuality.length,
+      sub: 'AI-rated high quality',
+      icon: Star,
+      color: '#8b5cf6',
     },
     {
       label: 'Sectors',
       value: Object.keys(result.bySector).length,
       sub: `top: ${getTopSector(result.bySector)}`,
       icon: PieChart,
-      color: '#8b5cf6',
+      color: '#3b82f6',
     },
   ];
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
       {cards.map((card) => (
         <div
           key={card.label}

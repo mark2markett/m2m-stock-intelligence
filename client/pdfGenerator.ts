@@ -75,7 +75,7 @@ export class PDFGenerator {
     // Executive Summary Box
     doc.setDrawColor(0, 0, 0);
     doc.setFillColor(248, 250, 252);
-    const summaryHeight = 40;
+    const summaryHeight = 45;
     doc.rect(20, yPosition, 170, summaryHeight, 'F');
     doc.rect(20, yPosition, 170, summaryHeight, 'S');
 
@@ -91,7 +91,10 @@ export class PDFGenerator {
     yPosition += 5;
     doc.text(`Setup Stage: ${report.setupStage} | M2M Score: ${report.scorecard.totalScore}/${report.scorecard.maxScore} | Factors: ${report.scorecard.factorsPassed}/${report.scorecard.totalFactors}`, 25, yPosition);
     yPosition += 5;
-    doc.text(`Volatility Regime: ${report.volatilityRegime} | News Sentiment: ${newsData.length > 0 ? analyzeSentiment(newsData) : 'Neutral'} | ${report.scorecard.publishable ? 'PUBLISHABLE' : 'Below Threshold'}`, 25, yPosition);
+    const qualityLabel = report.setupQuality === 'high' ? 'HIGH-QUALITY SETUP' : report.setupQuality === 'moderate' ? 'MODERATE SETUP' : 'NO CLEAR SETUP';
+    doc.text(`Setup Quality: ${report.setupQuality.toUpperCase()} | Signal Confidence: ${report.signalConfidence}/100`, 25, yPosition);
+    yPosition += 5;
+    doc.text(`Volatility Regime: ${report.volatilityRegime} | News Sentiment: ${newsData.length > 0 ? analyzeSentiment(newsData) : 'Neutral'} | ${qualityLabel}`, 25, yPosition);
     yPosition += 5;
     doc.text(`Support: $${indicators.bollingerBands.lower.toFixed(2)} | Resistance: $${indicators.bollingerBands.upper.toFixed(2)}`, 25, yPosition);
     yPosition += 15;

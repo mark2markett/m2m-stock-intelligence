@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useCallback } from 'react';
-import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, BarChart3, XCircle, Newspaper, FileText, LineChart } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, BarChart3, XCircle, Newspaper, FileText, LineChart, Shield, Activity } from 'lucide-react';
 import { AccordionSection } from '@/components/AccordionSection';
 import { DailyChart } from '@/components/DailyChart';
 import { useSwipe } from '@/hooks/useSwipe';
@@ -93,7 +93,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
           <div className="flex items-center gap-2 mb-2">
             {getSetupStageIcon(report.setupStage)}
@@ -119,6 +119,44 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
         <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
           <div className="text-xs sm:text-sm text-[#9CA3AF] mb-2">Volatility</div>
           <span className="font-semibold text-[#E5E7EB] text-sm sm:text-base">{report.volatilityRegime}</span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-4 w-4" />
+            <span className="text-xs sm:text-sm text-[#9CA3AF]">Setup Quality</span>
+          </div>
+          <span className={`inline-block px-2 py-0.5 rounded text-xs sm:text-sm font-semibold ${
+            report.setupQuality === 'high' ? 'bg-[#00E59B]/15 text-[#00E59B]' :
+            report.setupQuality === 'moderate' ? 'bg-yellow-400/15 text-yellow-400' :
+            'bg-[#374151] text-[#9CA3AF]'
+          }`}>
+            {report.setupQuality.toUpperCase()}
+          </span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="h-4 w-4" />
+            <span className="text-xs sm:text-sm text-[#9CA3AF]">Signal Confidence</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`font-semibold text-sm sm:text-base ${
+              report.signalConfidence >= 70 ? 'text-[#00E59B]' :
+              report.signalConfidence >= 45 ? 'text-yellow-400' :
+              'text-red-400'
+            }`}>
+              {report.signalConfidence}
+            </span>
+            <div className="flex-1 bg-[#1f2937] rounded-full h-1.5">
+              <div
+                className={`h-1.5 rounded-full ${
+                  report.signalConfidence >= 70 ? 'bg-[#00E59B]' :
+                  report.signalConfidence >= 45 ? 'bg-yellow-400' :
+                  'bg-red-400'
+                }`}
+                style={{ width: `${report.signalConfidence}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -311,18 +349,32 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
     </>
   );
 
-  const renderSummary = () => (
-    <>
-      <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[#E5E7EB]">
-        {report.actionable ? <CheckCircle className="h-5 w-5 text-[#00E59B]" /> : <AlertTriangle className="h-5 w-5 text-yellow-400" />}
-        Observation Summary
-      </h3>
-      <p className="text-[#E5E7EB] font-medium mb-2">
-        {report.actionable ? 'EDUCATIONAL SETUP - PATTERN IDENTIFIED' : 'NO CLEAR PATTERN - MONITORING'}
-      </p>
-      <p className="text-[#9CA3AF] text-sm sm:text-base">{report.recommendation}</p>
-    </>
-  );
+  const getQualitySummary = () => {
+    switch (report.setupQuality) {
+      case 'high':
+        return { icon: <CheckCircle className="h-5 w-5 text-[#00E59B]" />, text: 'HIGH-QUALITY SETUP IDENTIFIED', color: 'text-[#00E59B]' };
+      case 'moderate':
+        return { icon: <AlertTriangle className="h-5 w-5 text-yellow-400" />, text: 'MODERATE SETUP — DEVELOPING', color: 'text-yellow-400' };
+      default:
+        return { icon: <AlertTriangle className="h-5 w-5 text-[#9CA3AF]" />, text: 'NO CLEAR SETUP — MONITORING', color: 'text-[#9CA3AF]' };
+    }
+  };
+
+  const renderSummary = () => {
+    const qualitySummary = getQualitySummary();
+    return (
+      <>
+        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[#E5E7EB]">
+          {qualitySummary.icon}
+          Observation Summary
+        </h3>
+        <p className={`font-medium mb-2 ${qualitySummary.color}`}>
+          {qualitySummary.text}
+        </p>
+        <p className="text-[#9CA3AF] text-sm sm:text-base">{report.recommendation}</p>
+      </>
+    );
+  };
 
   // --- Partial result banner ---
   const partialBanner = isPartialResult && (

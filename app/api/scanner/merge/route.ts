@@ -59,6 +59,8 @@ export async function GET(request: NextRequest) {
   const topByScore = sorted.slice(0, 20).map(s => s.symbol);
   const justTriggered = successStocks.filter(s => s.setupStage === 'Just Triggered').map(s => s.symbol);
   const publishable = successStocks.filter(s => s.publishable).map(s => s.symbol);
+  const earlyStage = successStocks.filter(s => s.aiEarlyStage).map(s => s.symbol);
+  const highQuality = successStocks.filter(s => s.aiSetupQuality === 'high').map(s => s.symbol);
 
   const bySector: Record<string, number> = {};
   for (const stock of successStocks) {
@@ -76,6 +78,8 @@ export async function GET(request: NextRequest) {
     topByScore,
     justTriggered,
     publishable,
+    earlyStage,
+    highQuality,
     bySector,
   };
 
