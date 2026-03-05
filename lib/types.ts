@@ -71,6 +71,10 @@ export interface AnalysisReport {
   volatilityRegime: 'High' | 'Normal' | 'Low';
   confidenceScore: number;
   actionable: boolean;
+  setupQuality: 'high' | 'moderate' | 'low';
+  signalConfidence: number;
+  earlyStage: boolean;
+  catalystPresent: boolean;
   recommendation: string;
   sections: ReportSection[];
   historicalData?: HistoricalDataPoint[];
@@ -155,6 +159,13 @@ export interface ScannerStockResult {
   macdSignal: 'bullish' | 'bearish';
   trendAlignment: 'bullish' | 'bearish' | 'neutral';
   recommendation: string;
+  aiSetupQuality: 'high' | 'moderate' | 'low';
+  aiConfidence: number;
+  aiEarlyStage: boolean;
+  aiKeySignal: string;
+  aiRisk: string;
+  aiCatalystPresent: boolean;
+  aiSummary: string;
   partial: boolean;
   error?: string;
   analyzedAt: string;
@@ -171,6 +182,8 @@ export interface ScannerResult {
   topByScore: string[];
   justTriggered: string[];
   publishable: string[];
+  earlyStage: string[];
+  highQuality: string[];
   bySector: Record<string, number>;
 }
 
