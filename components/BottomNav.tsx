@@ -1,8 +1,8 @@
 'use client';
 
-import { Search, BarChart3, FileText, Info } from 'lucide-react';
+import { Search, BarChart3, FileText, Info, Radar } from 'lucide-react';
 
-export type NavTab = 'search' | 'results' | 'pdf' | 'about';
+export type NavTab = 'search' | 'results' | 'pdf' | 'about' | 'scanner';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -13,6 +13,7 @@ interface BottomNavProps {
 const tabs: { id: NavTab; label: string; icon: typeof Search }[] = [
   { id: 'search', label: 'Search', icon: Search },
   { id: 'results', label: 'Results', icon: BarChart3 },
+  { id: 'scanner', label: 'Scanner', icon: Radar },
   { id: 'pdf', label: 'PDF', icon: FileText },
   { id: 'about', label: 'About', icon: Info },
 ];

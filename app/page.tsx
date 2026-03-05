@@ -1,5 +1,10 @@
+import { Suspense } from 'react';
 import { StockAnalysisClient } from '@/components/StockAnalysisClient';
 
 export default function Home() {
-  return <StockAnalysisClient />;
+  return (
+    <Suspense>
+      <StockAnalysisClient />
+    </Suspense>
+  );
 }

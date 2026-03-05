@@ -126,3 +126,62 @@ export interface AppError {
   suggestions?: string[];
   partialData?: boolean;
 }
+
+// --- Scanner Types ---
+
+export interface SP500Stock {
+  symbol: string;
+  name: string;
+  sector: string;
+}
+
+export interface ScannerStockResult {
+  symbol: string;
+  name: string;
+  sector: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: number;
+  marketCap: number;
+  m2mScore: number;
+  m2mMaxScore: number;
+  factorsPassed: number;
+  totalFactors: number;
+  publishable: boolean;
+  setupStage: string;
+  volatilityRegime: string;
+  rsi: number;
+  macdSignal: 'bullish' | 'bearish';
+  trendAlignment: 'bullish' | 'bearish' | 'neutral';
+  recommendation: string;
+  partial: boolean;
+  error?: string;
+  analyzedAt: string;
+}
+
+export interface ScannerResult {
+  scanDate: string;
+  startedAt: string;
+  completedAt: string;
+  totalStocks: number;
+  successCount: number;
+  errorCount: number;
+  stocks: ScannerStockResult[];
+  topByScore: string[];
+  justTriggered: string[];
+  publishable: string[];
+  bySector: Record<string, number>;
+}
+
+export interface ScanBatchStatus {
+  scanDate: string;
+  totalBatches: number;
+  completedBatches: number;
+  currentBatch: number;
+  status: 'running' | 'completed' | 'failed';
+  stocksProcessed: number;
+  totalStocks: number;
+  startedAt: string;
+  lastUpdatedAt: string;
+}

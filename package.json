@@ -24,6 +24,7 @@
     "@capacitor/push-notifications": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.1",
+    "@upstash/redis": "^1.36.3",
     "date-fns": "^3.0.0",
     "jspdf": "^2.5.1",
     "lucide-react": "^0.344.0",
