@@ -1,25 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { waitUntil } from '@vercel/functions';
 import { SP500_CONSTITUENTS } from '@/lib/data/sp500';
 import { ScannerEngine } from '@/lib/server/scannerEngine';
 import { KVStore } from '@/lib/server/kvStore';
-import type { ScanBatchStatus } from '@/lib/types';
+import type { ScanBatchStatus, ScannerStockResult, ScannerResult } from '@/lib/types';
 
 const BATCH_SIZE = 10;
 
 function isAuthorized(request: NextRequest): boolean {
-  // Vercel Cron sends this header automatically
   const cronSecret = request.headers.get('authorization');
   if (cronSecret === `Bearer ${process.env.CRON_SECRET}`) return true;
 
-  // Also check query param for manual triggers
   const secret = request.nextUrl.searchParams.get('secret');
   if (secret === process.env.CRON_SECRET) return true;
 
   return false;
 }
 
-export const maxDuration = 300; // Vercel Pro max
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
@@ -31,7 +28,6 @@ export async function GET(request: NextRequest) {
   const totalStocks = SP500_CONSTITUENTS.length;
   const totalBatches = Math.ceil(totalStocks / BATCH_SIZE);
 
-  // Initialize scan status
   const status: ScanBatchStatus = {
     scanDate,
     totalBatches,
@@ -45,56 +41,68 @@ export async function GET(request: NextRequest) {
   };
   await KVStore.setScanStatus(status);
 
-  // Process batch 0 inline
-  const batch0Stocks = SP500_CONSTITUENTS.slice(0, BATCH_SIZE);
-  const batch0Results = await ScannerEngine.analyzeBatch(batch0Stocks);
-  await KVStore.setBatchResults(scanDate, 0, batch0Results);
+  // Process all batches sequentially
+  for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
+    const start = batchIndex * BATCH_SIZE;
+    const batchStocks = SP500_CONSTITUENTS.slice(start, start + BATCH_SIZE);
+    const batchResults = await ScannerEngine.analyzeBatch(batchStocks);
+    await KVStore.setBatchResults(scanDate, batchIndex, batchResults);
 
-  // Update status
-  status.completedBatches = 1;
-  status.currentBatch = 1;
-  status.stocksProcessed = batch0Stocks.length;
+    status.completedBatches = batchIndex + 1;
+    status.currentBatch = batchIndex + 1;
+    status.stocksProcessed = Math.min((batchIndex + 1) * BATCH_SIZE, totalStocks);
+    status.lastUpdatedAt = new Date().toISOString();
+    await KVStore.setScanStatus(status);
+  }
+
+  // Finalize — merge all batches into a single result
+  const allStocks: ScannerStockResult[] = [];
+  for (let i = 0; i < totalBatches; i++) {
+    const batchResults = await KVStore.getBatchResults(scanDate, i);
+    if (batchResults) {
+      allStocks.push(...batchResults);
+    }
+  }
+
+  const successStocks = allStocks.filter(s => !s.error);
+  const errorStocks = allStocks.filter(s => !!s.error);
+
+  const sorted = [...successStocks].sort((a, b) => b.m2mScore - a.m2mScore);
+  const topByScore = sorted.slice(0, 20).map(s => s.symbol);
+  const justTriggered = successStocks.filter(s => s.setupStage === 'Just Triggered').map(s => s.symbol);
+  const publishable = successStocks.filter(s => s.publishable).map(s => s.symbol);
+
+  const bySector: Record<string, number> = {};
+  for (const stock of successStocks) {
+    bySector[stock.sector] = (bySector[stock.sector] || 0) + 1;
+  }
+
+  const result: ScannerResult = {
+    scanDate,
+    startedAt: status.startedAt,
+    completedAt: new Date().toISOString(),
+    totalStocks: allStocks.length,
+    successCount: successStocks.length,
+    errorCount: errorStocks.length,
+    stocks: allStocks,
+    topByScore,
+    justTriggered,
+    publishable,
+    bySector,
+  };
+
+  await KVStore.setLatestResult(result);
+
+  status.status = 'completed';
   status.lastUpdatedAt = new Date().toISOString();
   await KVStore.setScanStatus(status);
 
-  // Chain to next batch if more remain
-  const baseUrl = getBaseUrl(request);
-  if (totalBatches > 1) {
-    waitUntil(
-      fetch(`${baseUrl}/api/scanner/batch`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.CRON_SECRET}`,
-        },
-        body: JSON.stringify({ scanDate, batchIndex: 1, totalBatches }),
-      })
-    );
-  } else {
-    // Only one batch, finalize immediately
-    waitUntil(
-      fetch(`${baseUrl}/api/scanner/finalize`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.CRON_SECRET}`,
-        },
-        body: JSON.stringify({ scanDate, totalBatches }),
-      })
-    );
-  }
-
   return NextResponse.json({
-    message: 'Scan started',
+    message: 'Scan complete',
     scanDate,
-    totalStocks,
-    totalBatches,
-    batch0Processed: batch0Stocks.length,
+    totalStocks: allStocks.length,
+    successCount: successStocks.length,
+    errorCount: errorStocks.length,
+    topByScore: topByScore.slice(0, 5),
   });
-}
-
-function getBaseUrl(request: NextRequest): string {
-  const host = request.headers.get('host') || 'localhost:3000';
-  const protocol = host.includes('localhost') ? 'http' : 'https';
-  return `${protocol}://${host}`;
 }
