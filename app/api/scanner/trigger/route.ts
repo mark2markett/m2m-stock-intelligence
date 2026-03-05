@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { waitUntil } from '@vercel/functions';
 import { SP500_CONSTITUENTS } from '@/lib/data/sp500';
 import { ScannerEngine } from '@/lib/server/scannerEngine';
 import { KVStore } from '@/lib/server/kvStore';
@@ -57,27 +58,30 @@ export async function GET(request: NextRequest) {
   await KVStore.setScanStatus(status);
 
   // Chain to next batch if more remain
+  const baseUrl = getBaseUrl(request);
   if (totalBatches > 1) {
-    const baseUrl = getBaseUrl(request);
-    fetch(`${baseUrl}/api/scanner/batch`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.CRON_SECRET}`,
-      },
-      body: JSON.stringify({ scanDate, batchIndex: 1, totalBatches }),
-    }).catch(err => console.error('[Scanner] Failed to chain batch 1:', err));
+    waitUntil(
+      fetch(`${baseUrl}/api/scanner/batch`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+        },
+        body: JSON.stringify({ scanDate, batchIndex: 1, totalBatches }),
+      })
+    );
   } else {
     // Only one batch, finalize immediately
-    const baseUrl = getBaseUrl(request);
-    fetch(`${baseUrl}/api/scanner/finalize`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.CRON_SECRET}`,
-      },
-      body: JSON.stringify({ scanDate, totalBatches }),
-    }).catch(err => console.error('[Scanner] Failed to call finalize:', err));
+    waitUntil(
+      fetch(`${baseUrl}/api/scanner/finalize`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+        },
+        body: JSON.stringify({ scanDate, totalBatches }),
+      })
+    );
   }
 
   return NextResponse.json({
