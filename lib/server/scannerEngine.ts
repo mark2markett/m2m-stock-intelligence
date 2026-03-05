@@ -2,7 +2,7 @@ import 'server-only';
 import { AnalysisEngine } from './analysisEngine';
 import type { SP500Stock, ScannerStockResult, AnalysisResult } from '@/lib/types';
 
-const CONCURRENCY = 5;
+const CONCURRENCY = 10;
 
 function mapToScannerResult(stock: SP500Stock, analysis: AnalysisResult): ScannerStockResult {
   const { report, stockData, indicators } = analysis;
