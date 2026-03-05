@@ -22,6 +22,7 @@ export class KVStore {
 
   static async setScanStatus(status: ScanBatchStatus): Promise<void> {
     await redis.set(KEYS.scanStatus(status.scanDate), JSON.stringify(status), { ex: SCAN_TTL_SECONDS });
+    await redis.set(KEYS.latestDate, status.scanDate, { ex: SCAN_TTL_SECONDS });
   }
 
   static async getScanStatus(date: string): Promise<ScanBatchStatus | null> {
