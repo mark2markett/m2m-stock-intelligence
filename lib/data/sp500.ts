@@ -506,5 +506,5 @@ const ALL_SP500: SP500Stock[] = [
   { symbol: 'ZTS', name: 'Zoetis Inc.', sector: 'Health Care' },
 ];
 
-// Limit to first 150 stocks to stay within Vercel function timeout
-export const SP500_CONSTITUENTS = ALL_SP500.slice(0, 150);
+// Limit to first 120 stocks to stay within Vercel function timeout
+export const SP500_CONSTITUENTS = ALL_SP500.slice(0, 120);
