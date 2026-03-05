@@ -5,6 +5,7 @@ import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
 import { OpenAIService } from './openaiService';
+import { assessQuality } from '@/lib/utils/qualityAssessment';
 import type { AnalysisReport, AnalysisResult, ReportSection } from '@/lib/types';
 
 export class AnalysisEngine {
@@ -62,6 +63,9 @@ export class AnalysisEngine {
     let partial = false;
     let aiError: string | undefined;
 
+    const quality = assessQuality(scorecard, indicators, setupStage, optionsData !== null);
+    const dominantTrend = this.computeDominantTrend(indicators, stockData.price);
+
     try {
       const aiGeneratedReport = await OpenAIService.generateAnalysisReport(
         symbol,
@@ -73,7 +77,12 @@ export class AnalysisEngine {
         indicatorResults.regime as 'High' | 'Normal' | 'Low',
         setupStage,
         this.generateLifecycleRationale(setupStage),
-        rsiInterpretation
+        rsiInterpretation,
+        optionsData,
+        scorecard,
+        quality.setupQuality,
+        quality.signalConfidence,
+        dominantTrend
       );
       sections = this.parseAIReportToSections(aiGeneratedReport);
     } catch (err) {
@@ -89,6 +98,10 @@ export class AnalysisEngine {
       volatilityRegime: indicatorResults.regime as 'High' | 'Normal' | 'Low',
       confidenceScore: scorecard.totalScore,
       actionable: scorecard.publishable,
+      setupQuality: quality.setupQuality,
+      signalConfidence: quality.signalConfidence,
+      earlyStage: quality.earlyStage,
+      catalystPresent: quality.catalystPresent,
       recommendation: this.generateRecommendation(scorecard, setupStage, indicators, stockData.price, support, resistance),
       sections,
       historicalData
@@ -317,6 +330,19 @@ export class AnalysisEngine {
     }
 
     return baseMultiplier;
+  }
+
+  private static computeDominantTrend(
+    indicators: any,
+    price: number
+  ): 'bullish' | 'bearish' | 'neutral' {
+    const bullishCount = [
+      indicators.rsi > 50,
+      indicators.macd.macd > indicators.macd.signal,
+      indicators.ema20 > indicators.ema50,
+      price > indicators.ema20
+    ].filter(Boolean).length;
+    return bullishCount >= 3 ? 'bullish' : bullishCount <= 1 ? 'bearish' : 'neutral';
   }
 
   private static generateFallbackSections(
