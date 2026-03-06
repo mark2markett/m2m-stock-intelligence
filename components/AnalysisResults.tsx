@@ -5,7 +5,8 @@ import { Download, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Clock, 
 import { AccordionSection } from '@/components/AccordionSection';
 import { DailyChart } from '@/components/DailyChart';
 import { useSwipe } from '@/hooks/useSwipe';
-import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, OptionsData } from '@/lib/types';
+import type { AnalysisReport, StockData, TechnicalIndicators, NewsItem, OptionsData, OptimalTrade as OptimalTradeType } from '@/lib/types';
+import { OptimalTrade } from '@/components/OptimalTrade';
 
 interface AnalysisResultsProps {
   report: AnalysisReport;
@@ -13,12 +14,13 @@ interface AnalysisResultsProps {
   indicators: TechnicalIndicators;
   newsData: NewsItem[];
   optionsData?: OptionsData;
+  optimalTrade?: OptimalTradeType;
   onDownloadPDF: () => void;
   isMobile?: boolean;
   isPartialResult?: boolean;
 }
 
-const MOBILE_SECTIONS = ['chart', 'scorecard', 'indicators', 'news', 'analysis', 'summary'] as const;
+const MOBILE_SECTIONS = ['chart', 'scorecard', 'indicators', 'news', 'analysis', 'trade', 'summary'] as const;
 
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   report,
@@ -26,6 +28,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   indicators,
   newsData,
   optionsData,
+  optimalTrade: optimalTradeData,
   onDownloadPDF,
   isMobile = false,
   isPartialResult = false,
@@ -445,6 +448,14 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
             {renderAnalysis()}
           </AccordionSection>
         )}
+        {currentSection === 'trade' && optimalTradeData && (
+          <OptimalTrade trade={optimalTradeData} symbol={stockData.symbol} />
+        )}
+        {currentSection === 'trade' && !optimalTradeData && (
+          <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
+            <p className="text-sm text-[#6B7280]">Optimal trade analysis unavailable for this request.</p>
+          </div>
+        )}
         {currentSection === 'summary' && (
           <AccordionSection title="Observation Summary" icon={<CheckCircle className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
             {renderSummary()}
@@ -483,6 +494,10 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
         {renderAnalysis()}
       </div>
+
+      {optimalTradeData && (
+        <OptimalTrade trade={optimalTradeData} symbol={stockData.symbol} />
+      )}
 
       <div className="bg-[#111827] rounded-xl p-6 border border-[#00E59B]/20">
         {renderSummary()}

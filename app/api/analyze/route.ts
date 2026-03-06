@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
         indicators: result.indicators,
         news: result.news,
         optionsData: result.optionsData,
+        optimalTrade: result.optimalTrade,
         partial: result.partial || false,
         aiError: result.aiError,
       },

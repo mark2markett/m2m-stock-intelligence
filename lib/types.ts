@@ -100,6 +100,24 @@ export interface HistoricalDataPoint {
   volume: number;
 }
 
+export interface OptionContract {
+  ticker: string;
+  contractType: 'call' | 'put';
+  strikePrice: number;
+  expirationDate: string;
+  daysToExpiry: number;
+  bid: number;
+  ask: number;
+  midpoint: number;
+  volume: number;
+  openInterest: number;
+  impliedVolatility: number;
+  delta: number;
+  gamma: number;
+  theta: number;
+  vega: number;
+}
+
 export interface OptionsData {
   putCallRatio: number;
   totalCallVolume: number;
@@ -109,6 +127,38 @@ export interface OptionsData {
   avgImpliedVolatility: number;
   nearMoneyIV: number;
   contractCount: number;
+  topContracts?: OptionContract[];
+}
+
+export interface OptimalTradeleg {
+  contractType: 'call' | 'put';
+  strikePrice: number;
+  expirationDate: string;
+  action: 'buy' | 'sell';
+  estimatedPrice: number;
+  delta: number;
+  reasoning: string;
+}
+
+export interface OptimalTrade {
+  hasSetup: boolean;
+  vehicle: 'stock' | 'options';
+  direction: 'bullish' | 'bearish' | 'neutral';
+  strategy: string;
+  reasoning: string;
+  entryZone: string;
+  stopLoss: string;
+  target1: string;
+  target2: string;
+  riskRewardRatio: string;
+  positionSizing: string;
+  legs?: OptimalTradeleg[];
+  maxRisk: string;
+  maxReward: string;
+  ivEnvironment: string;
+  timeHorizon: string;
+  conditionsNeeded?: string[];
+  educationalDisclaimer: string;
 }
 
 export interface AnalysisResult {
@@ -117,6 +167,7 @@ export interface AnalysisResult {
   indicators: TechnicalIndicators;
   news: NewsItem[];
   optionsData?: OptionsData;
+  optimalTrade?: OptimalTrade;
   partial?: boolean;
   aiError?: string;
 }

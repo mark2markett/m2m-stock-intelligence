@@ -6,7 +6,7 @@ import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
 import { OpenAIService } from './openaiService';
 import { assessQuality } from '@/lib/utils/qualityAssessment';
-import type { AnalysisReport, AnalysisResult, ReportSection } from '@/lib/types';
+import type { AnalysisReport, AnalysisResult, ReportSection, OptimalTrade } from '@/lib/types';
 
 export class AnalysisEngine {
   /**
@@ -62,33 +62,60 @@ export class AnalysisEngine {
     let sections: ReportSection[];
     let partial = false;
     let aiError: string | undefined;
+    let optimalTrade: OptimalTrade | undefined;
 
     const quality = assessQuality(scorecard, indicators, setupStage, optionsData !== null);
     const dominantTrend = this.computeDominantTrend(indicators, stockData.price);
 
+    // Run main AI analysis and optimal trade call in parallel
+    const aiReportPromise = OpenAIService.generateAnalysisReport(
+      symbol,
+      stockData,
+      indicators,
+      support,
+      resistance,
+      this.formatSentimentData(newsData),
+      indicatorResults.regime as 'High' | 'Normal' | 'Low',
+      setupStage,
+      this.generateLifecycleRationale(setupStage),
+      rsiInterpretation,
+      optionsData,
+      scorecard,
+      quality.setupQuality,
+      quality.signalConfidence,
+      dominantTrend
+    );
+
+    const optimalTradePromise = OpenAIService.generateOptimalTrade({
+      symbol,
+      price: stockData.price,
+      changePercent: stockData.changePercent,
+      indicators,
+      support,
+      resistance,
+      optionsData,
+      scorecard,
+      setupQuality: quality.setupQuality,
+      signalConfidence: quality.signalConfidence,
+      dominantTrend,
+      setupStage,
+      volatilityRegime: indicatorResults.regime as string,
+      atr: indicators.atr,
+    }).catch(() => undefined);
+
     try {
-      const aiGeneratedReport = await OpenAIService.generateAnalysisReport(
-        symbol,
-        stockData,
-        indicators,
-        support,
-        resistance,
-        this.formatSentimentData(newsData),
-        indicatorResults.regime as 'High' | 'Normal' | 'Low',
-        setupStage,
-        this.generateLifecycleRationale(setupStage),
-        rsiInterpretation,
-        optionsData,
-        scorecard,
-        quality.setupQuality,
-        quality.signalConfidence,
-        dominantTrend
-      );
+      const [aiGeneratedReport, tradeResult] = await Promise.all([
+        aiReportPromise,
+        optimalTradePromise,
+      ]);
       sections = this.parseAIReportToSections(aiGeneratedReport);
+      optimalTrade = tradeResult;
     } catch (err) {
       partial = true;
       aiError = err instanceof Error ? err.message : 'AI analysis unavailable';
       sections = this.generateFallbackSections(indicators, scorecard, setupStage, stockData.price, support, resistance);
+      // Still try to get optimal trade even if main analysis failed
+      optimalTrade = await optimalTradePromise.catch(() => undefined);
     }
 
     const report: AnalysisReport = {
@@ -113,6 +140,7 @@ export class AnalysisEngine {
       indicators,
       news: newsData,
       optionsData: optionsData || undefined,
+      optimalTrade,
       partial,
       aiError,
     };

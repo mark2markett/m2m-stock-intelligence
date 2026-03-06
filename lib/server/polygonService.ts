@@ -1,6 +1,6 @@
 import 'server-only';
 import { CacheService } from './cacheService';
-import type { OptionsData } from '@/lib/types';
+import type { OptionsData, OptionContract } from '@/lib/types';
 
 const BASE_URL = 'https://api.polygon.io/v2';
 const REST_URL = 'https://api.polygon.io/v3';
@@ -138,6 +138,8 @@ export class PolygonService {
       let ivSum = 0, ivCount = 0;
       let nearMoneyIVSum = 0, nearMoneyIVCount = 0;
 
+      const allContracts: (OptionContract & { liquidityScore: number })[] = [];
+
       for (const contract of data.results) {
         const details = contract.details;
         const greeks = contract.greeks;
@@ -149,6 +151,11 @@ export class PolygonService {
         const vol = dayData?.volume || 0;
         const oi = contract.open_interest || 0;
         const iv = greeks?.implied_volatility;
+        const bid = dayData?.close ? (dayData.close * 0.98) : 0;
+        const ask = dayData?.close ? (dayData.close * 1.02) : 0;
+        const lastQuote = contract.last_quote;
+        const contractBid = lastQuote?.bid ?? bid;
+        const contractAsk = lastQuote?.ask ?? ask;
 
         if (isCall) {
           totalCallVolume += vol;
@@ -162,14 +169,48 @@ export class PolygonService {
           ivSum += iv;
           ivCount++;
 
-          // Near-money: within 5% of current price
           const strike = details.strike_price;
           if (strike && Math.abs(strike - currentPrice) / currentPrice < 0.05) {
             nearMoneyIVSum += iv;
             nearMoneyIVCount++;
           }
         }
+
+        // Preserve contract details for optimal trade analysis
+        const expDate = details.expiration_date;
+        const daysToExpiry = expDate
+          ? Math.ceil((new Date(expDate).getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+
+        if (greeks && daysToExpiry > 0 && (vol > 0 || oi > 10)) {
+          allContracts.push({
+            ticker: details.ticker || `${symbol}${expDate}${isCall ? 'C' : 'P'}${details.strike_price}`,
+            contractType: isCall ? 'call' : 'put',
+            strikePrice: details.strike_price,
+            expirationDate: expDate,
+            daysToExpiry,
+            bid: contractBid,
+            ask: contractAsk,
+            midpoint: (contractBid + contractAsk) / 2,
+            volume: vol,
+            openInterest: oi,
+            impliedVolatility: iv || 0,
+            delta: greeks.delta || 0,
+            gamma: greeks.gamma || 0,
+            theta: greeks.theta || 0,
+            vega: greeks.vega || 0,
+            liquidityScore: vol + (oi * 0.5),
+          });
+        }
       }
+
+      // Sort by liquidity and take top 20 (10 calls + 10 puts ideally)
+      allContracts.sort((a, b) => b.liquidityScore - a.liquidityScore);
+      const topCalls = allContracts.filter(c => c.contractType === 'call').slice(0, 10);
+      const topPuts = allContracts.filter(c => c.contractType === 'put').slice(0, 10);
+      const topContracts: OptionContract[] = [...topCalls, ...topPuts].map(
+        ({ liquidityScore: _, ...contract }) => contract
+      );
 
       const totalCallVol = totalCallVolume || 1;
       const result: OptionsData = {
@@ -181,6 +222,7 @@ export class PolygonService {
         avgImpliedVolatility: ivCount > 0 ? ivSum / ivCount : 0,
         nearMoneyIV: nearMoneyIVCount > 0 ? nearMoneyIVSum / nearMoneyIVCount : 0,
         contractCount: data.results.length,
+        topContracts,
       };
 
       CacheService.set(cacheKey, result, POLYGON_CACHE_TTL);
