@@ -8,39 +8,44 @@ interface ScannerSummaryProps {
 }
 
 export function ScannerSummary({ result }: ScannerSummaryProps) {
+  const publishable = result.publishable ?? [];
+  const earlyStage = result.earlyStage ?? [];
+  const highQuality = result.highQuality ?? [];
+  const bySector = result.bySector ?? {};
+
   const cards = [
     {
       label: 'Stocks Scanned',
-      value: result.successCount,
-      sub: `${result.errorCount} errors`,
+      value: result.successCount ?? 0,
+      sub: `${result.errorCount ?? 0} errors`,
       icon: BarChart3,
       color: '#00E59B',
     },
     {
       label: 'Publishable',
-      value: result.publishable.length,
-      sub: `of ${result.successCount}`,
+      value: publishable.length,
+      sub: `of ${result.successCount ?? 0}`,
       icon: CheckCircle,
       color: '#22c55e',
     },
     {
       label: 'Early Stage',
-      value: result.earlyStage.length,
+      value: earlyStage.length,
       sub: 'AI-detected forming setups',
       icon: Zap,
       color: '#f59e0b',
     },
     {
       label: 'High Quality',
-      value: result.highQuality.length,
+      value: highQuality.length,
       sub: 'AI-rated high quality',
       icon: Star,
       color: '#8b5cf6',
     },
     {
       label: 'Sectors',
-      value: Object.keys(result.bySector).length,
-      sub: `top: ${getTopSector(result.bySector)}`,
+      value: Object.keys(bySector).length,
+      sub: `top: ${getTopSector(bySector)}`,
       icon: PieChart,
       color: '#3b82f6',
     },

@@ -82,7 +82,7 @@ export function ScannerPageClient() {
 
   // Extract unique sectors and stages from result
   const { sectors, stages } = useMemo(() => {
-    if (!result) return { sectors: [], stages: [] };
+    if (!result?.stocks) return { sectors: [], stages: [] };
     const sectorSet = new Set<string>();
     const stageSet = new Set<string>();
     for (const s of result.stocks) {
@@ -97,7 +97,7 @@ export function ScannerPageClient() {
 
   // Filter & sort stocks
   const filteredStocks = useMemo(() => {
-    if (!result) return [];
+    if (!result?.stocks) return [];
 
     let stocks = result.stocks.filter(s => !s.error);
 
@@ -264,7 +264,7 @@ export function ScannerPageClient() {
 
             <div className="flex items-center justify-between">
               <span className="text-sm text-[#6B7280]">
-                {filteredStocks.length} of {result.successCount} stocks
+                {filteredStocks.length} of {result.successCount ?? 0} stocks
               </span>
             </div>
 

@@ -240,7 +240,7 @@ function ScoreBar({ score, maxScore }: { score: number; maxScore: number }) {
   );
 }
 
-function AIQualityBadge({ quality }: { quality: 'high' | 'moderate' | 'low' }) {
+function AIQualityBadge({ quality = 'low' }: { quality: 'high' | 'moderate' | 'low' }) {
   const styles: Record<string, string> = {
     high: 'bg-[#22c55e]/10 text-[#22c55e] border-[#22c55e]/30',
     moderate: 'bg-[#f59e0b]/10 text-[#f59e0b] border-[#f59e0b]/30',
