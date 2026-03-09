@@ -7,14 +7,28 @@ export interface QualityAssessment {
   catalystPresent: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Helper: look up a factor by name instead of by array index.
+// This makes the code resilient to factor reordering and new factor additions.
+// ---------------------------------------------------------------------------
+function getFactorByName(scorecard: M2MScorecard, name: string) {
+  const factor = scorecard.factors.find(f => f.name === name);
+  if (!factor) {
+    // Graceful fallback: return a neutral non-passing placeholder
+    return { name, maxPoints: 0, score: 0, passed: false, rationale: 'Factor not found' };
+  }
+  return factor;
+}
+
 /**
- * Adjusted scoring that removes the options factor inflation when options data is missing.
+ * Adjusted scoring that removes the Options factor contribution when options
+ * data is unavailable (scanner mode).
  *
- * Factor 3 (Options Quality) returns 13/25 with passed=true when no options data
- * is available. This inflates every stock's score by 13 and gives a free factor pass.
- * When hasOptionsData is true, we use the full score as-is.
+ * When hasOptionsData is false, the Options Quality factor returns a neutral
+ * 14/28 (50%). We strip it from both the numerator and denominator so the
+ * adjusted percentage reflects the 5 real factors that were actually scored.
  *
- * Adjusted max without options = 75 (30 + 25 + 10 + 10), real factors = 4.
+ * Adjusted max without options = 72 (22 + 18 + 12 + 12 + 8), real factors = 5.
  */
 export function getAdjustedScoring(scorecard: M2MScorecard, hasOptionsData: boolean) {
   if (hasOptionsData) {
@@ -27,7 +41,7 @@ export function getAdjustedScoring(scorecard: M2MScorecard, hasOptionsData: bool
     };
   }
 
-  const optionsFactor = scorecard.factors[2]; // Factor 3: Options Quality
+  const optionsFactor = getFactorByName(scorecard, 'Options Quality');
   const adjustedScore = scorecard.totalScore - optionsFactor.score;
   const adjustedMax = scorecard.maxScore - optionsFactor.maxPoints;
   const adjustedPct = adjustedMax > 0 ? (adjustedScore / adjustedMax) * 100 : 0;
@@ -43,9 +57,9 @@ export function getAdjustedScoring(scorecard: M2MScorecard, hasOptionsData: bool
  * meet a minimum bar before the composite applies.
  *
  * HIGH requires ALL of:
- *   - Factor 1 (Signal Strength) passes   (>= 15/30)
- *   - Factor 2 (Technical Structure) passes (>= 13/25)
- *   - Factor 4 (Risk/Reward) passes        (>= 5/10, i.e. R/R >= 1.5:1)
+ *   - Signal Strength passes    (>= 50% of 22pts = 11+)
+ *   - Technical Structure passes (>= 50% of 18pts = 9+)
+ *   - Risk/Reward passes         (>= 50% of 12pts = 6+, i.e. R/R >= 1.5:1)
  *   - Adjusted score >= 70%
  *   - 3+ real factors pass
  *
@@ -54,15 +68,13 @@ export function getAdjustedScoring(scorecard: M2MScorecard, hasOptionsData: bool
  *   - 2+ real factors pass
  *
  * LOW: everything else.
- *
- * Factor indices: 0=SignalStrength, 1=TechStructure, 2=Options, 3=R/R, 4=Catalyst
  */
 function computeSetupQuality(scorecard: M2MScorecard, hasOptionsData: boolean): 'high' | 'moderate' | 'low' {
   const { adjustedPct, realFactorsPassed } = getAdjustedScoring(scorecard, hasOptionsData);
 
-  const signalStrengthPasses = scorecard.factors[0].passed;
-  const techStructurePasses = scorecard.factors[1].passed;
-  const riskRewardPasses = scorecard.factors[3].passed;
+  const signalStrengthPasses = getFactorByName(scorecard, 'Strategy Signal Strength').passed;
+  const techStructurePasses  = getFactorByName(scorecard, 'Technical Structure').passed;
+  const riskRewardPasses     = getFactorByName(scorecard, 'Risk/Reward Ratio').passed;
 
   if (
     signalStrengthPasses &&
@@ -82,14 +94,17 @@ function computeSetupQuality(scorecard: M2MScorecard, hasOptionsData: boolean): 
 }
 
 /**
- * Confidence score (0-100) measuring signal clarity and assessment reliability.
+ * Confidence score (0–100) measuring signal clarity and assessment reliability.
  *
  * Five continuous dimensions:
  * 1. Directional Consensus (30%): Do 5 independent signals agree?
- * 2. Trend Strength (25%): Continuous ADX scale (0->0, 25->50, 50+->100)
+ * 2. Trend Strength (25%):        Continuous ADX scale (0→0, 25→50, 50+→100)
  * 3. Momentum Confirmation (20%): Do momentum sub-indicators confirm?
- * 4. Score Conviction (15%): How far is adjusted score from ambiguity (50%)?
- * 5. Data Completeness (10%): 100 with options data, 80 without
+ * 4. Score Conviction (15%):      How far is adjusted score from ambiguity (50%)?
+ * 5. Data Completeness (10%):     100 with options data, 80 without
+ *
+ * CMF threshold uses > 0.10 (calibrated to match the new scoring tier boundary
+ * for "moderate accumulation") rather than the naive > 0 from the old system.
  */
 function computeConfidence(scorecard: M2MScorecard, indicators: TechnicalIndicators, hasOptionsData: boolean): number {
   // 1. Directional Consensus (30%)
@@ -97,7 +112,7 @@ function computeConfidence(scorecard: M2MScorecard, indicators: TechnicalIndicat
     indicators.ema20 > indicators.ema50,
     indicators.macd.macd > indicators.macd.signal,
     indicators.rsi > 50,
-    indicators.cmf > 0,
+    indicators.cmf > 0.10,   // updated: matches moderate accumulation threshold
     indicators.stochastic.k > indicators.stochastic.d,
   ];
   const bullishCount = signals.filter(Boolean).length;
@@ -134,9 +149,9 @@ function computeConfidence(scorecard: M2MScorecard, indicators: TechnicalIndicat
 /**
  * Unified quality assessment for both single-stock analysis and scanner.
  *
- * @param scorecard - M2M scorecard from TradeSetupAnalyzer
- * @param indicators - Technical indicators
- * @param setupStage - Current setup stage
+ * @param scorecard      - M2M scorecard from TradeSetupAnalyzer
+ * @param indicators     - Technical indicators
+ * @param setupStage     - Current setup stage
  * @param hasOptionsData - true for single-stock (full data), false for scanner
  */
 export function assessQuality(
@@ -149,6 +164,6 @@ export function assessQuality(
     setupQuality: computeSetupQuality(scorecard, hasOptionsData),
     signalConfidence: computeConfidence(scorecard, indicators, hasOptionsData),
     earlyStage: setupStage === 'Setup Forming' || setupStage === 'Just Triggered',
-    catalystPresent: scorecard.factors[4].passed,
+    catalystPresent: getFactorByName(scorecard, 'Catalyst Presence').passed,
   };
 }
