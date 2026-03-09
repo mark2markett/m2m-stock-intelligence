@@ -173,10 +173,9 @@ export class AnalysisEngine {
     barsNeeded: number,
   ): Promise<{ fast: number; slow: number } | null> {
     try {
-      const multiplier = timeframe === '4hour' ? 4 : 1;
-      const timespan = timeframe === '4hour' ? 'hour' : 'week';
-
-      const data = await PolygonService.getHistoricalData(symbol, timespan, barsNeeded, multiplier);
+      // PolygonService.getHistoricalData already handles '4hour' and 'week'
+      // timeframe strings internally — no 4th multiplier param needed.
+      const data = await PolygonService.getHistoricalData(symbol, timeframe, barsNeeded);
       if (!data || data.length < slowPeriod) return null;
 
       const closes = data.map((d: any) => d.close);
