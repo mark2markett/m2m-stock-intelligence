@@ -1,6 +1,4 @@
-import 'server-only';
-import { TechnicalIndicators } from '@/lib/utils/technicalIndicators';
-import { SupportResistanceAnalyzer } from '@/lib/utils/supportResistance';
+import { TechnicalIndicators, SupportResistanceAnalyzer } from '@/lib/utils/technicalIndicators';
 import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
@@ -37,6 +35,14 @@ export class AnalysisEngine {
     // Fetch options data (non-blocking — null on failure)
     const optionsData = await PolygonService.getOptionsSnapshot(symbol, stockData.price);
 
+    // Fetch multi-timeframe data (non-blocking — null on failure for each)
+    // Weekly: EMA5/EMA13 | 4h: EMA8/EMA20
+    // Graceful failure: if Polygon plan doesn't support these, scoring skips MTF
+    const [weeklyEma, fourHourEma] = await Promise.all([
+      this.fetchMultiTimeframeEma(symbol, 'week', 5, 13, 52),
+      this.fetchMultiTimeframeEma(symbol, '4hour', 8, 20, 60),
+    ]);
+
     const setupStage = TradeSetupAnalyzer.analyzeSetupStage(indicators, stockData.price, support, resistance, closes);
 
     const rsiInterpretation = TechnicalIndicators.interpretRsiForPdf(
@@ -56,7 +62,9 @@ export class AnalysisEngine {
       stockData.price,
       support,
       resistance,
-      optionsData
+      optionsData,
+      weeklyEma,
+      fourHourEma,
     );
 
     let sections: ReportSection[];
@@ -146,6 +154,50 @@ export class AnalysisEngine {
     };
   }
 
+  /**
+   * Fetch EMA values for a non-daily timeframe.
+   * Returns { fast, slow } EMA values, or null if the fetch fails
+   * (e.g. Polygon plan doesn't include intraday/weekly data).
+   *
+   * @param symbol    - Ticker symbol
+   * @param timeframe - Polygon multiplier/timespan combo ('week' | '4hour')
+   * @param fastPeriod - Fast EMA period
+   * @param slowPeriod - Slow EMA period
+   * @param barsNeeded - How many bars to fetch (needs >= slowPeriod)
+   */
+  private static async fetchMultiTimeframeEma(
+    symbol: string,
+    timeframe: 'week' | '4hour',
+    fastPeriod: number,
+    slowPeriod: number,
+    barsNeeded: number,
+  ): Promise<{ fast: number; slow: number } | null> {
+    try {
+      const multiplier = timeframe === '4hour' ? 4 : 1;
+      const timespan = timeframe === '4hour' ? 'hour' : 'week';
+
+      const data = await PolygonService.getHistoricalData(symbol, timespan, barsNeeded, multiplier);
+      if (!data || data.length < slowPeriod) return null;
+
+      const closes = data.map((d: any) => d.close);
+      const highs = data.map((d: any) => d.high);
+      const lows = data.map((d: any) => d.low);
+      const volumes = data.map((d: any) => d.volume);
+
+      const result = TechnicalIndicators.computeIndicators(highs, lows, closes, volumes,
+        timeframe === 'week' ? 'weekly' : '4h'
+      );
+
+      return {
+        fast: result.indicators.ema20,   // ema20 field holds the fast EMA for the given timeframe
+        slow: result.indicators.ema50,   // ema50 field holds the slow EMA for the given timeframe
+      };
+    } catch {
+      // Non-fatal: if MTF data is unavailable, scoring continues without it
+      return null;
+    }
+  }
+
   private static formatSentimentData(newsData: any[]): string {
     if (newsData.length === 0) return 'No significant news items found';
 
@@ -224,6 +276,26 @@ export class AnalysisEngine {
     }
 
     return sections;
+  }
+
+  private static generateFallbackSections(
+    indicators: any,
+    scorecard: any,
+    setupStage: string,
+    currentPrice: number,
+    support: number[],
+    resistance: number[]
+  ): ReportSection[] {
+    return [
+      {
+        title: 'Technical Summary',
+        content: `Setup stage: ${setupStage}. RSI: ${indicators.rsi.toFixed(1)}, MACD: ${indicators.macd.macd.toFixed(3)}, EMA20: ${indicators.ema20.toFixed(2)}, EMA50: ${indicators.ema50.toFixed(2)}.`
+      },
+      {
+        title: 'Score Summary',
+        content: `M2M Score: ${scorecard.totalScore}/${scorecard.maxScore}. ${scorecard.factorsPassed}/${scorecard.totalFactors} factors passed. ${scorecard.publishable ? 'Setup meets publication threshold.' : 'Setup does not meet publication threshold.'}`
+      }
+    ];
   }
 
   private static generateRecommendation(
@@ -370,38 +442,9 @@ export class AnalysisEngine {
       indicators.ema20 > indicators.ema50,
       price > indicators.ema20
     ].filter(Boolean).length;
-    return bullishCount >= 3 ? 'bullish' : bullishCount <= 1 ? 'bearish' : 'neutral';
-  }
 
-  private static generateFallbackSections(
-    indicators: any,
-    scorecard: any,
-    setupStage: string,
-    price: number,
-    support: number[],
-    resistance: number[]
-  ): ReportSection[] {
-    const rsiStatus = indicators.rsi > 70 ? 'overbought' : indicators.rsi < 30 ? 'oversold' : 'neutral';
-    const macdStatus = indicators.macd.macd > indicators.macd.signal ? 'bullish crossover' : 'bearish crossover';
-    const trendStatus = indicators.ema20 > indicators.ema50 ? 'bullish (EMA20 > EMA50)' : 'bearish (EMA20 < EMA50)';
-
-    return [
-      {
-        title: 'Technical Summary',
-        content: `RSI(14): ${indicators.rsi.toFixed(1)} (${rsiStatus}). MACD: ${indicators.macd.macd.toFixed(3)} showing ${macdStatus}. Trend alignment: ${trendStatus}. ADX: ${indicators.adx.toFixed(1)} indicating ${indicators.adx > 25 ? 'strong' : 'weak'} trend strength. CMF: ${indicators.cmf.toFixed(3)} showing ${indicators.cmf > 0.1 ? 'accumulation' : indicators.cmf < -0.1 ? 'distribution' : 'balanced flow'}.`
-      },
-      {
-        title: 'Key Levels',
-        content: `Current price: $${price.toFixed(2)}. Setup stage: ${setupStage}. Support levels: ${support.slice(0, 3).map(s => '$' + s.toFixed(2)).join(', ') || 'N/A'}. Resistance levels: ${resistance.slice(0, 3).map(r => '$' + r.toFixed(2)).join(', ') || 'N/A'}.`
-      },
-      {
-        title: 'Scorecard Overview',
-        content: `M2M Score: ${scorecard.totalScore}/${scorecard.maxScore}. Factors passed: ${scorecard.factorsPassed}/${scorecard.totalFactors}. Publication threshold ${scorecard.meetsPublicationThreshold ? 'met' : 'not met'}. Multi-factor rule ${scorecard.meetsMultiFactorRule ? 'met' : 'not met'}.`
-      },
-      {
-        title: 'Note',
-        content: 'AI-generated detailed analysis was unavailable for this request. The technical data and scorecard above are computed from real market data. Re-run the analysis to attempt a full AI-powered report.'
-      }
-    ];
+    if (bullishCount >= 3) return 'bullish';
+    if (bullishCount <= 1) return 'bearish';
+    return 'neutral';
   }
 }
