@@ -1,4 +1,5 @@
-import { TechnicalIndicators, SupportResistanceAnalyzer } from '@/lib/utils/technicalIndicators';
+import { TechnicalIndicators } from '@/lib/utils/technicalIndicators';
+import { SupportResistanceAnalyzer } from '@/lib/utils/supportResistance';
 import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
