@@ -15,14 +15,14 @@ interface AnalysisResultsProps {
   newsData: NewsItem[];
   optionsData?: OptionsData;
   optimalTrade?: OptimalTradeType;
-  onDownloadPDF: () =\u003e void;
+  onDownloadPDF: () => void;
   isMobile?: boolean;
   isPartialResult?: boolean;
 }
 
 const MOBILE_SECTIONS = ['chart', 'scorecard', 'indicators', 'news', 'analysis', 'trade', 'summary'] as const;
 
-export const AnalysisResults: React.FC\u003cAnalysisResultsProps\u003e = ({
+export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
   report,
   stockData,
   indicators,
@@ -32,503 +32,503 @@ export const AnalysisResults: React.FC\u003cAnalysisResultsProps\u003e = ({
   onDownloadPDF,
   isMobile = false,
   isPartialResult = false,
-}) =\u003e {
+}) => {
   const [activeSectionIndex, setActiveSectionIndex] = useState(0);
-  const swipeRef = useRef\u003cHTMLDivElement\u003e(null);
+  const swipeRef = useRef<HTMLDivElement>(null);
 
-  const handleSwipeLeft = useCallback(() =\u003e {
-    setActiveSectionIndex(i =\u003e Math.min(i + 1, MOBILE_SECTIONS.length - 1));
+  const handleSwipeLeft = useCallback(() => {
+    setActiveSectionIndex(i => Math.min(i + 1, MOBILE_SECTIONS.length - 1));
   }, []);
-  const handleSwipeRight = useCallback(() =\u003e {
-    setActiveSectionIndex(i =\u003e Math.max(i - 1, 0));
+  const handleSwipeRight = useCallback(() => {
+    setActiveSectionIndex(i => Math.max(i - 1, 0));
   }, []);
 
   useSwipe(swipeRef, { onSwipeLeft: handleSwipeLeft, onSwipeRight: handleSwipeRight });
 
-  const getSetupStageIcon = (stage: string) =\u003e {
+  const getSetupStageIcon = (stage: string) => {
     switch (stage) {
-      case 'Setup Forming': return \u003cClock className=\"h-4 w-4\" /\u003e;
-      case 'Just Triggered': return \u003cCheckCircle className=\"h-4 w-4\" /\u003e;
-      case 'Mid Setup': return \u003cTrendingUp className=\"h-4 w-4\" /\u003e;
-      case 'Late Setup': return \u003cAlertTriangle className=\"h-4 w-4\" /\u003e;
-      default: return \u003cBarChart3 className=\"h-4 w-4\" /\u003e;
+      case 'Setup Forming': return <Clock className="h-4 w-4" />;
+      case 'Just Triggered': return <CheckCircle className="h-4 w-4" />;
+      case 'Mid Setup': return <TrendingUp className="h-4 w-4" />;
+      case 'Late Setup': return <AlertTriangle className="h-4 w-4" />;
+      default: return <BarChart3 className="h-4 w-4" />;
     }
   };
 
-  const getScoreColor = (score: number, max: number) =\u003e {
-    const pct = max \u003e 0 ? (score / max) * 100 : 0;
-    if (pct \u003e= 70) return 'text-[#00E59B]';
-    if (pct \u003e= 50) return 'text-yellow-400';
+  const getScoreColor = (score: number, max: number) => {
+    const pct = max > 0 ? (score / max) * 100 : 0;
+    if (pct >= 70) return 'text-[#00E59B]';
+    if (pct >= 50) return 'text-yellow-400';
     return 'text-red-400';
   };
 
-  const getScoreBarColor = (score: number, max: number) =\u003e {
-    const pct = max \u003e 0 ? (score / max) * 100 : 0;
-    if (pct \u003e= 70) return 'bg-[#00E59B]';
-    if (pct \u003e= 50) return 'bg-yellow-400';
+  const getScoreBarColor = (score: number, max: number) => {
+    const pct = max > 0 ? (score / max) * 100 : 0;
+    if (pct >= 70) return 'bg-[#00E59B]';
+    if (pct >= 50) return 'bg-yellow-400';
     return 'bg-red-400';
   };
 
   const { scorecard } = report;
 
   // --- Shared section renderers ---
-  const renderHeaderCard = () =\u003e (
-    \u003cdiv className=\"bg-[#111827] rounded-xl p-4 sm:p-6 border border-[#1f2937]\"\u003e
-      \u003cdiv className=\"flex justify-between items-start mb-6\"\u003e
-        \u003cdiv\u003e
-          \u003ch1 className=\"text-2xl font-bold text-[#E5E7EB]\"\u003e{stockData.symbol}\u003c/h1\u003e
-          \u003cp className=\"text-[#9CA3AF]\"\u003e{stockData.name}\u003c/p\u003e
-          \u003cdiv className=\"flex items-center gap-4 mt-2\"\u003e
-            \u003cspan className=\"text-2xl font-semibold text-[#E5E7EB]\"\u003e${stockData.price.toFixed(2)}\u003c/span\u003e
-            \u003cspan className={`flex items-center gap-1 ${stockData.change \u003e= 0 ? 'text-[#00E59B]' : 'text-red-400'}`}\u003e
-              {stockData.change \u003e= 0 ? \u003cTrendingUp className=\"h-4 w-4\" /\u003e : \u003cTrendingDown className=\"h-4 w-4\" /\u003e}
-              {stockData.change \u003e= 0 ? '+' : ''}{stockData.changePercent.toFixed(2)}%
-            \u003c/span\u003e
-          \u003c/div\u003e
-        \u003c/div\u003e
-        {!isMobile \u0026\u0026 (
-          \u003cbutton
+  const renderHeaderCard = () => (
+    <div className="bg-[#111827] rounded-xl p-4 sm:p-6 border border-[#1f2937]">
+      <div className="flex justify-between items-start mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-[#E5E7EB]">{stockData.symbol}</h1>
+          <p className="text-[#9CA3AF]">{stockData.name}</p>
+          <div className="flex items-center gap-4 mt-2">
+            <span className="text-2xl font-semibold text-[#E5E7EB]">${stockData.price.toFixed(2)}</span>
+            <span className={`flex items-center gap-1 ${stockData.change >= 0 ? 'text-[#00E59B]' : 'text-red-400'}`}>
+              {stockData.change >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              {stockData.change >= 0 ? '+' : ''}{stockData.changePercent.toFixed(2)}%
+            </span>
+          </div>
+        </div>
+        {!isMobile && (
+          <button
             onClick={onDownloadPDF}
-            className=\"flex items-center gap-2 bg-[#00E59B] hover:bg-[#00cc8a] text-[#0a0e17] px-4 py-2 rounded-lg font-semibold transition-colors duration-200 min-h-[44px]\"
-          \u003e
-            \u003cDownload className=\"h-4 w-4\" /\u003e
+            className="flex items-center gap-2 bg-[#00E59B] hover:bg-[#00cc8a] text-[#0a0e17] px-4 py-2 rounded-lg font-semibold transition-colors duration-200 min-h-[44px]"
+          >
+            <Download className="h-4 w-4" />
             Download PDF
-          \u003c/button\u003e
+          </button>
         )}
-      \u003c/div\u003e
-      \u003cdiv className=\"grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4\"\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"flex items-center gap-2 mb-2\"\u003e
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="flex items-center gap-2 mb-2">
             {getSetupStageIcon(report.setupStage)}
-            \u003cspan className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eSetup Stage\u003c/span\u003e
-          \u003c/div\u003e
-          \u003cspan className=\"font-semibold text-[#E5E7EB] text-sm sm:text-base\"\u003e{report.setupStage}\u003c/span\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF] mb-2\"\u003eM2M Score\u003c/div\u003e
-          \u003cspan className={`font-semibold text-sm sm:text-base ${getScoreColor(scorecard.totalScore, scorecard.maxScore)}`}\u003e
+            <span className="text-xs sm:text-sm text-[#9CA3AF]">Setup Stage</span>
+          </div>
+          <span className="font-semibold text-[#E5E7EB] text-sm sm:text-base">{report.setupStage}</span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF] mb-2">M2M Score</div>
+          <span className={`font-semibold text-sm sm:text-base ${getScoreColor(scorecard.totalScore, scorecard.maxScore)}`}>
             {scorecard.totalScore}/{scorecard.maxScore}
-          \u003c/span\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF] mb-2\"\u003e
-            \u003cspan className=\"sm:hidden\"\u003eFactors\u003c/span\u003e
-            \u003cspan className=\"hidden sm:inline\"\u003eFactors Passed\u003c/span\u003e
-          \u003c/div\u003e
-          \u003cspan className={`font-semibold text-sm sm:text-base ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-yellow-400'}`}\u003e
+          </span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF] mb-2">
+            <span className="sm:hidden">Factors</span>
+            <span className="hidden sm:inline">Factors Passed</span>
+          </div>
+          <span className={`font-semibold text-sm sm:text-base ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-yellow-400'}`}>
             {scorecard.factorsPassed}/{scorecard.totalFactors}
-          \u003c/span\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF] mb-2\"\u003eVolatility\u003c/div\u003e
-          \u003cspan className=\"font-semibold text-[#E5E7EB] text-sm sm:text-base\"\u003e{report.volatilityRegime}\u003c/span\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"flex items-center gap-2 mb-2\"\u003e
-            \u003cShield className=\"h-4 w-4\" /\u003e
-            \u003cspan className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eSetup Quality\u003c/span\u003e
-          \u003c/div\u003e
-          \u003cspan className={`inline-block px-2 py-0.5 rounded text-xs sm:text-sm font-semibold ${
+          </span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF] mb-2">Volatility</div>
+          <span className="font-semibold text-[#E5E7EB] text-sm sm:text-base">{report.volatilityRegime}</span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="flex items-center gap-2 mb-2">
+            <Shield className="h-4 w-4" />
+            <span className="text-xs sm:text-sm text-[#9CA3AF]">Setup Quality</span>
+          </div>
+          <span className={`inline-block px-2 py-0.5 rounded text-xs sm:text-sm font-semibold ${
             report.setupQuality === 'high' ? 'bg-[#00E59B]/15 text-[#00E59B]' :
             report.setupQuality === 'moderate' ? 'bg-yellow-400/15 text-yellow-400' :
             'bg-[#374151] text-[#9CA3AF]'
-          }`}\u003e
+          }`}>
             {report.setupQuality.toUpperCase()}
-          \u003c/span\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"flex items-center gap-2 mb-2\"\u003e
-            \u003cActivity className=\"h-4 w-4\" /\u003e
-            \u003cspan className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eSignal Confidence\u003c/span\u003e
-          \u003c/div\u003e
-          \u003cdiv className=\"flex items-center gap-2\"\u003e
-            \u003cspan className={`font-semibold text-sm sm:text-base ${
-              report.signalConfidence \u003e= 70 ? 'text-[#00E59B]' :
-              report.signalConfidence \u003e= 45 ? 'text-yellow-400' :
+          </span>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity className="h-4 w-4" />
+            <span className="text-xs sm:text-sm text-[#9CA3AF]">Signal Confidence</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`font-semibold text-sm sm:text-base ${
+              report.signalConfidence >= 70 ? 'text-[#00E59B]' :
+              report.signalConfidence >= 45 ? 'text-yellow-400' :
               'text-red-400'
-            }`}\u003e
+            }`}>
               {report.signalConfidence}
-            \u003c/span\u003e
-            \u003cdiv className=\"flex-1 bg-[#1f2937] rounded-full h-1.5\"\u003e
-              \u003cdiv
+            </span>
+            <div className="flex-1 bg-[#1f2937] rounded-full h-1.5">
+              <div
                 className={`h-1.5 rounded-full ${
-                  report.signalConfidence \u003e= 70 ? 'bg-[#00E59B]' :
-                  report.signalConfidence \u003e= 45 ? 'bg-yellow-400' :
+                  report.signalConfidence >= 70 ? 'bg-[#00E59B]' :
+                  report.signalConfidence >= 45 ? 'bg-yellow-400' :
                   'bg-red-400'
                 }`}
                 style={{ width: `${report.signalConfidence}%` }}
-              /\u003e
-            \u003c/div\u003e
-          \u003c/div\u003e
-        \u003c/div\u003e
-      \u003c/div\u003e
-    \u003c/div\u003e
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 
-  const renderScorecard = () =\u003e (
-    \u003c\u003e
-      \u003cdiv className=\"flex items-center justify-between mb-4\"\u003e
-        \u003ch3 className=\"text-lg font-semibold flex items-center gap-2 text-[#E5E7EB]\"\u003e
-          \u003cBarChart3 className=\"h-5 w-5 text-[#00E59B]\" /\u003e
+  const renderScorecard = () => (
+    <>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2 text-[#E5E7EB]">
+          <BarChart3 className="h-5 w-5 text-[#00E59B]" />
           M2M 6-Factor Scorecard
-        \u003c/h3\u003e
-        \u003cdiv className=\"flex items-center gap-2\"\u003e
+        </h3>
+        <div className="flex items-center gap-2">
           {scorecard.publishable ? (
-            \u003cspan className=\"flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-[#00E59B]/10 text-[#00E59B]\"\u003e
-              \u003cCheckCircle className=\"h-3 w-3\" /\u003e Publishable
-            \u003c/span\u003e
+            <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-[#00E59B]/10 text-[#00E59B]">
+              <CheckCircle className="h-3 w-3" /> Publishable
+            </span>
           ) : (
-            \u003cspan className=\"flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-400/10 text-red-400\"\u003e
-              \u003cXCircle className=\"h-3 w-3\" /\u003e Below Threshold
-            \u003c/span\u003e
+            <span className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-400/10 text-red-400">
+              <XCircle className="h-3 w-3" /> Below Threshold
+            </span>
           )}
-        \u003c/div\u003e
-      \u003c/div\u003e
-      \u003cdiv className=\"flex gap-4 mb-6 text-xs\"\u003e
-        \u003cdiv className={`flex items-center gap-1 ${scorecard.meetsPublicationThreshold ? 'text-[#00E59B]' : 'text-red-400'}`}\u003e
-          {scorecard.meetsPublicationThreshold ? \u003cCheckCircle className=\"h-3 w-3\" /\u003e : \u003cXCircle className=\"h-3 w-3\" /\u003e}
-          Score {'\u003e'}= 65 threshold
-        \u003c/div\u003e
-        \u003cdiv className={`flex items-center gap-1 ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-red-400'}`}\u003e
-          {scorecard.meetsMultiFactorRule ? \u003cCheckCircle className=\"h-3 w-3\" /\u003e : \u003cXCircle className=\"h-3 w-3\" /\u003e}
+        </div>
+      </div>
+      <div className="flex gap-4 mb-6 text-xs">
+        <div className={`flex items-center gap-1 ${scorecard.meetsPublicationThreshold ? 'text-[#00E59B]' : 'text-red-400'}`}>
+          {scorecard.meetsPublicationThreshold ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
+          Score {'>'}= 65 threshold
+        </div>
+        <div className={`flex items-center gap-1 ${scorecard.meetsMultiFactorRule ? 'text-[#00E59B]' : 'text-red-400'}`}>
+          {scorecard.meetsMultiFactorRule ? <CheckCircle className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
           3-of-6 factor rule
-        \u003c/div\u003e
-      \u003c/div\u003e
-      \u003cdiv className=\"space-y-4\"\u003e
-        {scorecard.factors.map((factor, index) =\u003e (
-          \u003cdiv key={index} className=\"bg-[#0a0e17] rounded-lg p-4 border border-[#1f2937]\"\u003e
-            \u003cdiv className=\"flex items-center justify-between mb-2\"\u003e
-              \u003cdiv className=\"flex items-center gap-2\"\u003e
-                {factor.passed ? \u003cCheckCircle className=\"h-4 w-4 text-[#00E59B]\" /\u003e : \u003cXCircle className=\"h-4 w-4 text-red-400\" /\u003e}
-                \u003cspan className=\"text-sm font-medium text-[#E5E7EB]\"\u003e{factor.name}\u003c/span\u003e
-              \u003c/div\u003e
-              \u003cspan className={`text-sm font-semibold ${getScoreColor(factor.score, factor.maxPoints)}`}\u003e
+        </div>
+      </div>
+      <div className="space-y-4">
+        {scorecard.factors.map((factor, index) => (
+          <div key={index} className="bg-[#0a0e17] rounded-lg p-4 border border-[#1f2937]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                {factor.passed ? <CheckCircle className="h-4 w-4 text-[#00E59B]" /> : <XCircle className="h-4 w-4 text-red-400" />}
+                <span className="text-sm font-medium text-[#E5E7EB]">{factor.name}</span>
+              </div>
+              <span className={`text-sm font-semibold ${getScoreColor(factor.score, factor.maxPoints)}`}>
                 {factor.score}/{factor.maxPoints}
-              \u003c/span\u003e
-            \u003c/div\u003e
-            \u003cdiv className=\"w-full bg-[#1f2937] rounded-full h-1.5 mb-2\"\u003e
-              \u003cdiv
+              </span>
+            </div>
+            <div className="w-full bg-[#1f2937] rounded-full h-1.5 mb-2">
+              <div
                 className={`h-1.5 rounded-full ${getScoreBarColor(factor.score, factor.maxPoints)}`}
                 style={{ width: `${(factor.score / factor.maxPoints) * 100}%` }}
-              /\u003e
-            \u003c/div\u003e
-            \u003cp className=\"text-xs text-[#6B7280]\"\u003e{factor.rationale}\u003c/p\u003e
-          \u003c/div\u003e
+              />
+            </div>
+            <p className="text-xs text-[#6B7280]">{factor.rationale}</p>
+          </div>
         ))}
-      \u003c/div\u003e
-    \u003c/\u003e
+      </div>
+    </>
   );
 
-  const renderChart = () =\u003e {
-    if (!report.historicalData || report.historicalData.length \u003c 20) return null;
+  const renderChart = () => {
+    if (!report.historicalData || report.historicalData.length < 20) return null;
     return (
-      \u003c\u003e
-        \u003ch3 className=\"text-lg font-semibold mb-4 flex items-center gap-2 text-[#E5E7EB]\"\u003e
-          \u003cLineChart className=\"h-5 w-5 text-[#00E59B]\" /\u003e
+      <>
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#E5E7EB]">
+          <LineChart className="h-5 w-5 text-[#00E59B]" />
           Daily Price Chart
-        \u003c/h3\u003e
-        \u003cDailyChart historicalData={report.historicalData} /\u003e
-        \u003cdiv className=\"flex items-center justify-center gap-6 mt-3 text-xs text-[#6B7280]\"\u003e
-          \u003cspan className=\"flex items-center gap-1.5\"\u003e\u003cspan className=\"w-4 h-0.5 bg-[#E5E7EB] inline-block\" /\u003e Close\u003c/span\u003e
-          \u003cspan className=\"flex items-center gap-1.5\"\u003e\u003cspan className=\"w-4 h-0.5 bg-[#00E59B] inline-block\" /\u003e EMA 20\u003c/span\u003e
-          \u003cspan className=\"flex items-center gap-1.5\"\u003e\u003cspan className=\"w-4 h-0.5 bg-[#EF4444] inline-block\" /\u003e EMA 50\u003c/span\u003e
-        \u003c/div\u003e
-      \u003c/\u003e
+        </h3>
+        <DailyChart historicalData={report.historicalData} />
+        <div className="flex items-center justify-center gap-6 mt-3 text-xs text-[#6B7280]">
+          <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-[#E5E7EB] inline-block" /> Close</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-[#00E59B] inline-block" /> EMA 20</span>
+          <span className="flex items-center gap-1.5"><span className="w-4 h-0.5 bg-[#EF4444] inline-block" /> EMA 50</span>
+        </div>
+      </>
     );
   };
 
-  const renderIndicators = () =\u003e (
-    \u003c\u003e
-      \u003ch3 className=\"text-lg font-semibold mb-4 flex items-center gap-2 text-[#E5E7EB]\"\u003e
-        \u003cBarChart3 className=\"h-5 w-5 text-[#00E59B]\" /\u003e
+  const renderIndicators = () => (
+    <>
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#E5E7EB]">
+        <BarChart3 className="h-5 w-5 text-[#00E59B]" />
         Technical Indicators
-      \u003c/h3\u003e
-      \u003cdiv className=\"grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4\"\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eRSI (14)\u003c/div\u003e
-          \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{indicators.rsi.toFixed(1)}\u003c/div\u003e
-          \u003cdiv className={`text-xs ${indicators.rsi \u003e 70 ? 'text-red-400' : indicators.rsi \u003c 30 ? 'text-[#00E59B]' : 'text-[#6B7280]'}`}\u003e
-            {indicators.rsi \u003e 70 ? 'Overbought' : indicators.rsi \u003c 30 ? 'Oversold' : 'Neutral'}
-          \u003c/div\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eMACD\u003c/div\u003e
-          \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{indicators.macd.macd.toFixed(3)}\u003c/div\u003e
-          \u003cdiv className={`text-xs ${indicators.macd.macd \u003e indicators.macd.signal ? 'text-[#00E59B]' : 'text-red-400'}`}\u003e
-            {indicators.macd.macd \u003e indicators.macd.signal ? 'Bullish' : 'Bearish'}
-          \u003c/div\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eATR (14)\u003c/div\u003e
-          \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{indicators.atr.toFixed(2)}\u003c/div\u003e
-          \u003cdiv className=\"text-xs text-[#6B7280]\"\u003e{report.volatilityRegime} Volatility\u003c/div\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eADX (14)\u003c/div\u003e
-          \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{indicators.adx.toFixed(1)}\u003c/div\u003e
-          \u003cdiv className={`text-xs ${indicators.adx \u003e 25 ? 'text-[#00E59B]' : 'text-[#6B7280]'}`}\u003e
-            {indicators.adx \u003e 25 ? 'Strong Trend' : 'Weak Trend'}
-          \u003c/div\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003e
-            \u003cspan className=\"sm:hidden\"\u003eBollinger\u003c/span\u003e
-            \u003cspan className=\"hidden sm:inline\"\u003eBollinger Position\u003c/span\u003e
-          \u003c/div\u003e
-          \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e
-            {stockData.price \u003e indicators.bollingerBands.upper ? 'Upper' :
-             stockData.price \u003c indicators.bollingerBands.lower ? 'Lower' : 'Middle'}
-          \u003c/div\u003e
-          \u003cdiv className=\"text-xs text-[#6B7280]\"\u003e
+      </h3>
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF]">RSI (14)</div>
+          <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{indicators.rsi.toFixed(1)}</div>
+          <div className={`text-xs ${indicators.rsi > 70 ? 'text-red-400' : indicators.rsi < 30 ? 'text-[#00E59B]' : 'text-[#6B7280]'}`}>
+            {indicators.rsi > 70 ? 'Overbought' : indicators.rsi < 30 ? 'Oversold' : 'Neutral'}
+          </div>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF]">MACD</div>
+          <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{indicators.macd.macd.toFixed(3)}</div>
+          <div className={`text-xs ${indicators.macd.macd > indicators.macd.signal ? 'text-[#00E59B]' : 'text-red-400'}`}>
+            {indicators.macd.macd > indicators.macd.signal ? 'Bullish' : 'Bearish'}
+          </div>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF]">ATR (14)</div>
+          <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{indicators.atr.toFixed(2)}</div>
+          <div className="text-xs text-[#6B7280]">{report.volatilityRegime} Volatility</div>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF]">ADX (14)</div>
+          <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{indicators.adx.toFixed(1)}</div>
+          <div className={`text-xs ${indicators.adx > 25 ? 'text-[#00E59B]' : 'text-[#6B7280]'}`}>
+            {indicators.adx > 25 ? 'Strong Trend' : 'Weak Trend'}
+          </div>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF]">
+            <span className="sm:hidden">Bollinger</span>
+            <span className="hidden sm:inline">Bollinger Position</span>
+          </div>
+          <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">
+            {stockData.price > indicators.bollingerBands.upper ? 'Upper' :
+             stockData.price < indicators.bollingerBands.lower ? 'Lower' : 'Middle'}
+          </div>
+          <div className="text-xs text-[#6B7280]">
             ${indicators.bollingerBands.lower.toFixed(2)} - ${indicators.bollingerBands.upper.toFixed(2)}
-          \u003c/div\u003e
-        \u003c/div\u003e
-        \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-          \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eCMF (20)\u003c/div\u003e
-          \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{indicators.cmf.toFixed(3)}\u003c/div\u003e
-          \u003cdiv className={`text-xs ${indicators.cmf \u003e 0.1 ? 'text-[#00E59B]' : indicators.cmf \u003c -0.1 ? 'text-red-400' : 'text-[#6B7280]'}`}\u003e
-            {indicators.cmf \u003e 0.1 ? 'Accumulation' : indicators.cmf \u003c -0.1 ? 'Distribution' : 'Balanced'}
-          \u003c/div\u003e
-        \u003c/div\u003e
-        {optionsData \u0026\u0026 (
-          \u003c\u003e
-            \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-              \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003ePut/Call Ratio\u003c/div\u003e
-              \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{optionsData.putCallRatio.toFixed(2)}\u003c/div\u003e
-              \u003cdiv className={`text-xs ${optionsData.putCallRatio \u003c 0.7 ? 'text-[#00E59B]' : optionsData.putCallRatio \u003e 1.0 ? 'text-red-400' : 'text-[#6B7280]'}`}\u003e
-                {optionsData.putCallRatio \u003c 0.7 ? 'Bullish' : optionsData.putCallRatio \u003e 1.0 ? 'Bearish' : 'Neutral'}
-              \u003c/div\u003e
-            \u003c/div\u003e
-            \u003cdiv className=\"bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]\"\u003e
-              \u003cdiv className=\"text-xs sm:text-sm text-[#9CA3AF]\"\u003eAvg IV\u003c/div\u003e
-              \u003cdiv className=\"text-lg sm:text-xl font-semibold text-[#E5E7EB]\"\u003e{(optionsData.avgImpliedVolatility * 100).toFixed(1)}%\u003c/div\u003e
-              \u003cdiv className=\"text-xs text-[#6B7280]\"\u003e
+          </div>
+        </div>
+        <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+          <div className="text-xs sm:text-sm text-[#9CA3AF]">CMF (20)</div>
+          <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{indicators.cmf.toFixed(3)}</div>
+          <div className={`text-xs ${indicators.cmf > 0.1 ? 'text-[#00E59B]' : indicators.cmf < -0.1 ? 'text-red-400' : 'text-[#6B7280]'}`}>
+            {indicators.cmf > 0.1 ? 'Accumulation' : indicators.cmf < -0.1 ? 'Distribution' : 'Balanced'}
+          </div>
+        </div>
+        {optionsData && (
+          <>
+            <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+              <div className="text-xs sm:text-sm text-[#9CA3AF]">Put/Call Ratio</div>
+              <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{optionsData.putCallRatio.toFixed(2)}</div>
+              <div className={`text-xs ${optionsData.putCallRatio < 0.7 ? 'text-[#00E59B]' : optionsData.putCallRatio > 1.0 ? 'text-red-400' : 'text-[#6B7280]'}`}>
+                {optionsData.putCallRatio < 0.7 ? 'Bullish' : optionsData.putCallRatio > 1.0 ? 'Bearish' : 'Neutral'}
+              </div>
+            </div>
+            <div className="bg-[#0a0e17] rounded-lg p-3 sm:p-4 border border-[#1f2937]">
+              <div className="text-xs sm:text-sm text-[#9CA3AF]">Avg IV</div>
+              <div className="text-lg sm:text-xl font-semibold text-[#E5E7EB]">{(optionsData.avgImpliedVolatility * 100).toFixed(1)}%</div>
+              <div className="text-xs text-[#6B7280]">
                 {optionsData.contractCount} contracts
-              \u003c/div\u003e
-            \u003c/div\u003e
-          \u003c/\u003e
+              </div>
+            </div>
+          </>
         )}
-      \u003c/div\u003e
-    \u003c/\u003e
+      </div>
+    </>
   );
 
-  const renderNews = () =\u003e {
+  const renderNews = () => {
     if (newsData.length === 0) return null;
     return (
-      \u003c\u003e
-        \u003ch3 className=\"text-lg font-semibold mb-4 text-[#E5E7EB]\"\u003eRecent News \u0026 Sentiment\u003c/h3\u003e
-        \u003cdiv className=\"space-y-3\"\u003e
-          {newsData.slice(0, 4).map((news, index) =\u003e (
-            \u003cdiv key={index} className=\"flex items-start gap-3 p-3 bg-[#0a0e17] rounded-lg border border-[#1f2937]\"\u003e
-              \u003cdiv className=\"flex-1\"\u003e
-                \u003ch4 className=\"font-medium text-[#E5E7EB] text-sm sm:text-base\"\u003e{news.headline}\u003c/h4\u003e
-                \u003cdiv className=\"flex items-center gap-2 mt-1\"\u003e
-                  \u003cspan className={`px-2 py-1 rounded-full text-xs font-medium ${
+      <>
+        <h3 className="text-lg font-semibold mb-4 text-[#E5E7EB]">Recent News & Sentiment</h3>
+        <div className="space-y-3">
+          {newsData.slice(0, 4).map((news, index) => (
+            <div key={index} className="flex items-start gap-3 p-3 bg-[#0a0e17] rounded-lg border border-[#1f2937]">
+              <div className="flex-1">
+                <h4 className="font-medium text-[#E5E7EB] text-sm sm:text-base">{news.headline}</h4>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                     news.sentiment === 'Positive' ? 'bg-[#00E59B]/10 text-[#00E59B]' :
                     news.sentiment === 'Negative' ? 'bg-red-400/10 text-red-400' :
                     'bg-[#1f2937] text-[#9CA3AF]'
-                  }`}\u003e{news.sentiment}\u003c/span\u003e
-                  \u003cspan className=\"text-xs text-[#6B7280]\"\u003e{news.source}\u003c/span\u003e
-                  {news.date \u0026\u0026 (
-                    \u003cspan className=\"text-xs text-[#6B7280]\"\u003e
+                  }`}>{news.sentiment}</span>
+                  <span className="text-xs text-[#6B7280]">{news.source}</span>
+                  {news.date && (
+                    <span className="text-xs text-[#6B7280]">
                       · {new Date(news.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    \u003c/span\u003e
+                    </span>
                   )}
-                \u003c/div\u003e
-              \u003c/div\u003e
-            \u003c/div\u003e
+                </div>
+              </div>
+            </div>
           ))}
-        \u003c/div\u003e
-      \u003c/\u003e
+        </div>
+      </>
     );
   };
 
-  const renderAnalysis = () =\u003e (
-    \u003c\u003e
-      \u003ch3 className=\"text-lg font-semibold mb-6 text-[#E5E7EB]\"\u003eDetailed Analysis\u003c/h3\u003e
-      \u003cdiv className=\"space-y-6\"\u003e
-        {report.sections.map((section, index) =\u003e (
-          \u003cdiv key={index} className=\"border-l-4 border-[#00E59B]/30 pl-4\"\u003e
-            \u003ch4 className=\"font-semibold text-[#E5E7EB] mb-2\"\u003e{section.title}\u003c/h4\u003e
-            \u003cp className=\"text-[#9CA3AF] leading-relaxed whitespace-pre-line text-sm sm:text-base\"\u003e{section.content}\u003c/p\u003e
-          \u003c/div\u003e
+  const renderAnalysis = () => (
+    <>
+      <h3 className="text-lg font-semibold mb-6 text-[#E5E7EB]">Detailed Analysis</h3>
+      <div className="space-y-6">
+        {report.sections.map((section, index) => (
+          <div key={index} className="border-l-4 border-[#00E59B]/30 pl-4">
+            <h4 className="font-semibold text-[#E5E7EB] mb-2">{section.title}</h4>
+            <p className="text-[#9CA3AF] leading-relaxed whitespace-pre-line text-sm sm:text-base">{section.content}</p>
+          </div>
         ))}
-      \u003c/div\u003e
-    \u003c/\u003e
+      </div>
+    </>
   );
 
-  const getQualitySummary = () =\u003e {
+  const getQualitySummary = () => {
     // Derive dominant direction (same logic as analysisEngine.generateRecommendation)
     const bullishCount = [
-      indicators.rsi \u003e 50,
-      indicators.macd.macd \u003e indicators.macd.signal,
-      indicators.ema20 \u003e indicators.ema50,
-      stockData.price \u003e indicators.ema20,
+      indicators.rsi > 50,
+      indicators.macd.macd > indicators.macd.signal,
+      indicators.ema20 > indicators.ema50,
+      stockData.price > indicators.ema20,
     ].filter(Boolean).length;
-    const direction = bullishCount \u003e= 3 ? 'Bullish' : bullishCount \u003c= 1 ? 'Bearish' : 'Neutral';
+    const direction = bullishCount >= 3 ? 'Bullish' : bullishCount <= 1 ? 'Bearish' : 'Neutral';
 
     switch (report.setupQuality) {
       case 'high':
         return {
-          icon: \u003cCheckCircle className=\"h-5 w-5 text-[#00E59B]\" /\u003e,
+          icon: <CheckCircle className="h-5 w-5 text-[#00E59B]" />,
           text: `HIGH-QUALITY ${direction.toUpperCase()} SETUP`,
           color: 'text-[#00E59B]',
         };
       case 'moderate':
         return {
-          icon: \u003cAlertTriangle className=\"h-5 w-5 text-yellow-400\" /\u003e,
+          icon: <AlertTriangle className="h-5 w-5 text-yellow-400" />,
           text: `MODERATE ${direction.toUpperCase()} SETUP — DEVELOPING`,
           color: 'text-yellow-400',
         };
       default:
         return {
-          icon: \u003cAlertTriangle className=\"h-5 w-5 text-[#9CA3AF]\" /\u003e,
+          icon: <AlertTriangle className="h-5 w-5 text-[#9CA3AF]" />,
           text: `NO CLEAR ${direction.toUpperCase()} SETUP — MONITORING`,
           color: 'text-[#9CA3AF]',
         };
     }
   };
 
-  const renderSummary = () =\u003e {
+  const renderSummary = () => {
     const qualitySummary = getQualitySummary();
     return (
-      \u003c\u003e
-        \u003ch3 className=\"text-lg font-semibold mb-3 flex items-center gap-2 text-[#E5E7EB]\"\u003e
+      <>
+        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-[#E5E7EB]">
           {qualitySummary.icon}
           Observation Summary
-        \u003c/h3\u003e
-        \u003cp className={`font-medium mb-2 ${qualitySummary.color}`}\u003e
+        </h3>
+        <p className={`font-medium mb-2 ${qualitySummary.color}`}>
           {qualitySummary.text}
-        \u003c/p\u003e
-        \u003cp className=\"text-[#9CA3AF] text-sm sm:text-base\"\u003e{report.recommendation}\u003c/p\u003e
-      \u003c/\u003e
+        </p>
+        <p className="text-[#9CA3AF] text-sm sm:text-base">{report.recommendation}</p>
+      </>
     );
   };
 
   // --- Partial result banner ---
-  const partialBanner = isPartialResult \u0026\u0026 (
-    \u003cdiv className=\"bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-3 flex items-center gap-2\"\u003e
-      \u003cAlertTriangle className=\"h-4 w-4 text-yellow-400 flex-shrink-0\" /\u003e
-      \u003cp className=\"text-sm text-yellow-400\"\u003eAI analysis unavailable. Technical data shown.\u003c/p\u003e
-    \u003c/div\u003e
+  const partialBanner = isPartialResult && (
+    <div className="bg-yellow-400/10 border border-yellow-400/30 rounded-lg p-3 flex items-center gap-2">
+      <AlertTriangle className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+      <p className="text-sm text-yellow-400">AI analysis unavailable. Technical data shown.</p>
+    </div>
   );
 
   // --- MOBILE LAYOUT ---
   if (isMobile) {
     const currentSection = MOBILE_SECTIONS[activeSectionIndex];
     return (
-      \u003cdiv className=\"space-y-4\" ref={swipeRef}\u003e
+      <div className="space-y-4" ref={swipeRef}>
         {partialBanner}
         {renderHeaderCard()}
 
         {/* Mobile download button */}
-        \u003cbutton
+        <button
           onClick={onDownloadPDF}
-          className=\"w-full flex items-center justify-center gap-2 bg-[#00E59B] hover:bg-[#00cc8a] text-[#0a0e17] min-h-[44px] py-3 rounded-lg font-semibold transition-colors\"
-        \u003e
-          \u003cDownload className=\"h-4 w-4\" /\u003e
+          className="w-full flex items-center justify-center gap-2 bg-[#00E59B] hover:bg-[#00cc8a] text-[#0a0e17] min-h-[44px] py-3 rounded-lg font-semibold transition-colors"
+        >
+          <Download className="h-4 w-4" />
           Download PDF
-        \u003c/button\u003e
+        </button>
 
         {/* Dot indicators */}
-        \u003cdiv className=\"flex justify-center gap-0\"\u003e
-          {MOBILE_SECTIONS.map((_, i) =\u003e (
-            \u003cbutton
+        <div className="flex justify-center gap-0">
+          {MOBILE_SECTIONS.map((_, i) => (
+            <button
               key={i}
-              onClick={() =\u003e setActiveSectionIndex(i)}
-              className=\"min-h-[44px] min-w-[44px] flex items-center justify-center\"
+              onClick={() => setActiveSectionIndex(i)}
+              className="min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label={`Go to section ${i + 1}`}
-            \u003e
-              \u003cspan
+            >
+              <span
                 className={`block w-2 h-2 rounded-full transition-colors ${
                   i === activeSectionIndex ? 'bg-[#00E59B]' : 'bg-[#374151]'
                 }`}
-              /\u003e
-            \u003c/button\u003e
+              />
+            </button>
           ))}
-        \u003c/div\u003e
+        </div>
 
         {/* Accordion sections */}
-        {currentSection === 'chart' \u0026\u0026 (
-          \u003cAccordionSection title=\"Daily Chart\" icon={\u003cLineChart className=\"h-4 w-4 text-[#00E59B]\" /\u003e} defaultOpen\u003e
-            {renderChart() || \u003cp className=\"text-sm text-[#6B7280]\"\u003eInsufficient data for chart.\u003c/p\u003e}
-          \u003c/AccordionSection\u003e
+        {currentSection === 'chart' && (
+          <AccordionSection title="Daily Chart" icon={<LineChart className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
+            {renderChart() || <p className="text-sm text-[#6B7280]">Insufficient data for chart.</p>}
+          </AccordionSection>
         )}
-        {currentSection === 'scorecard' \u0026\u0026 (
-          \u003cAccordionSection title=\"M2M Scorecard\" icon={\u003cBarChart3 className=\"h-4 w-4 text-[#00E59B]\" /\u003e} defaultOpen\u003e
+        {currentSection === 'scorecard' && (
+          <AccordionSection title="M2M Scorecard" icon={<BarChart3 className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
             {renderScorecard()}
-          \u003c/AccordionSection\u003e
+          </AccordionSection>
         )}
-        {currentSection === 'indicators' \u0026\u0026 (
-          \u003cAccordionSection title=\"Technical Indicators\" icon={\u003cTrendingUp className=\"h-4 w-4 text-[#00E59B]\" /\u003e} defaultOpen\u003e
+        {currentSection === 'indicators' && (
+          <AccordionSection title="Technical Indicators" icon={<TrendingUp className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
             {renderIndicators()}
-          \u003c/AccordionSection\u003e
+          </AccordionSection>
         )}
-        {currentSection === 'news' \u0026\u0026 (
-          \u003cAccordionSection title=\"News \u0026 Sentiment\" icon={\u003cNewspaper className=\"h-4 w-4 text-[#00E59B]\" /\u003e} defaultOpen\u003e
-            {renderNews() || \u003cp className=\"text-sm text-[#6B7280]\"\u003eNo recent news available.\u003c/p\u003e}
-          \u003c/AccordionSection\u003e
+        {currentSection === 'news' && (
+          <AccordionSection title="News & Sentiment" icon={<Newspaper className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
+            {renderNews() || <p className="text-sm text-[#6B7280]">No recent news available.</p>}
+          </AccordionSection>
         )}
-        {currentSection === 'analysis' \u0026\u0026 (
-          \u003cAccordionSection title=\"Detailed Analysis\" icon={\u003cFileText className=\"h-4 w-4 text-[#00E59B]\" /\u003e} defaultOpen\u003e
+        {currentSection === 'analysis' && (
+          <AccordionSection title="Detailed Analysis" icon={<FileText className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
             {renderAnalysis()}
-          \u003c/AccordionSection\u003e
+          </AccordionSection>
         )}
-        {currentSection === 'trade' \u0026\u0026 optimalTradeData \u0026\u0026 (
-          \u003cOptimalTrade trade={optimalTradeData} symbol={stockData.symbol} /\u003e
+        {currentSection === 'trade' && optimalTradeData && (
+          <OptimalTrade trade={optimalTradeData} symbol={stockData.symbol} />
         )}
-        {currentSection === 'trade' \u0026\u0026 !optimalTradeData \u0026\u0026 (
-          \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#1f2937]\"\u003e
-            \u003cp className=\"text-sm text-[#6B7280]\"\u003eOptimal trade analysis unavailable for this request.\u003c/p\u003e
-          \u003c/div\u003e
+        {currentSection === 'trade' && !optimalTradeData && (
+          <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
+            <p className="text-sm text-[#6B7280]">Optimal trade analysis unavailable for this request.</p>
+          </div>
         )}
-        {currentSection === 'summary' \u0026\u0026 (
-          \u003cAccordionSection title=\"Observation Summary\" icon={\u003cCheckCircle className=\"h-4 w-4 text-[#00E59B]\" /\u003e} defaultOpen\u003e
+        {currentSection === 'summary' && (
+          <AccordionSection title="Observation Summary" icon={<CheckCircle className="h-4 w-4 text-[#00E59B]" />} defaultOpen>
             {renderSummary()}
-          \u003c/AccordionSection\u003e
+          </AccordionSection>
         )}
-      \u003c/div\u003e
+      </div>
     );
   }
 
   // --- DESKTOP LAYOUT ---
   return (
-    \u003cdiv className=\"space-y-6\"\u003e
+    <div className="space-y-6">
       {partialBanner}
       {renderHeaderCard()}
 
-      {report.historicalData \u0026\u0026 report.historicalData.length \u003e= 20 \u0026\u0026 (
-        \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#1f2937]\"\u003e
+      {report.historicalData && report.historicalData.length >= 20 && (
+        <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
           {renderChart()}
-        \u003c/div\u003e
+        </div>
       )}
 
-      \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#1f2937]\"\u003e
+      <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
         {renderScorecard()}
-      \u003c/div\u003e
+      </div>
 
-      \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#1f2937]\"\u003e
+      <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
         {renderIndicators()}
-      \u003c/div\u003e
+      </div>
 
-      {newsData.length \u003e 0 \u0026\u0026 (
-        \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#1f2937]\"\u003e
+      {newsData.length > 0 && (
+        <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
           {renderNews()}
-        \u003c/div\u003e
+        </div>
       )}
 
-      \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#1f2937]\"\u003e
+      <div className="bg-[#111827] rounded-xl p-6 border border-[#1f2937]">
         {renderAnalysis()}
-      \u003c/div\u003e
+      </div>
 
-      {optimalTradeData \u0026\u0026 (
-        \u003cOptimalTrade trade={optimalTradeData} symbol={stockData.symbol} /\u003e
+      {optimalTradeData && (
+        <OptimalTrade trade={optimalTradeData} symbol={stockData.symbol} />
       )}
 
-      \u003cdiv className=\"bg-[#111827] rounded-xl p-6 border border-[#00E59B]/20\"\u003e
+      <div className="bg-[#111827] rounded-xl p-6 border border-[#00E59B]/20">
         {renderSummary()}
-      \u003c/div\u003e
-    \u003c/div\u003e
+      </div>
+    </div>
   );
 };
 stylingDirectives
