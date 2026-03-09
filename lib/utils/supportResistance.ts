@@ -121,10 +121,14 @@ export class SupportResistanceAnalyzer {
     const clusteredSupport = this.clusterLevels(supportPrices, 0.015);
     const clusteredResistance = this.clusterLevels(resistancePrices, 0.015);
 
+    // FIX: Sort support nearest-first (ascending distance from price).
+    // Previously sorted descending, causing scoreRiskReward() to use the
+    // furthest support level and artificially inflate every R/R ratio.
     const supportLevels = clusteredSupport
-      .sort((a, b) => Math.abs(b - currentPrice) - Math.abs(a - currentPrice))
+      .sort((a, b) => Math.abs(a - currentPrice) - Math.abs(b - currentPrice))
       .slice(0, 3);
 
+    // Resistance already correct: nearest resistance first (ascending distance)
     const resistanceLevels = clusteredResistance
       .sort((a, b) => Math.abs(a - currentPrice) - Math.abs(b - currentPrice))
       .slice(0, 3);
