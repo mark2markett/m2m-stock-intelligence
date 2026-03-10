@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { BarChart3, TrendingUp, FileText, Radar } from 'lucide-react';
@@ -113,7 +112,7 @@ export function StockAnalysisClient() {
     startLoadingSteps();
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
+    const timeout = setTimeout(() => controller.abort(), 58000);
 
     try {
       const response = await fetch('/api/analyze', {
@@ -160,7 +159,7 @@ export function StockAnalysisClient() {
     } catch (err) {
       hapticWarning();
       if (err instanceof DOMException && err.name === 'AbortError') {
-        setError({ type: 'timeout', message: 'Request timed out. The server may be busy — try again.' });
+        setError({ type: 'timeout', message: 'Request timed out. The server may be busy â try again.' });
       } else {
         setError({ type: 'unknown', message: err instanceof Error ? err.message : 'Unknown error occurred' });
       }
@@ -236,7 +235,7 @@ export function StockAnalysisClient() {
       <div className="h-dvh bg-[#0a0e17] flex flex-col">
         <ToastProvider />
 
-        {/* Fixed header — safe area for notch/Dynamic Island */}
+        {/* Fixed header â safe area for notch/Dynamic Island */}
         <header className="flex-shrink-0 z-40 bg-[#111827] border-b border-[#1f2937] pt-safe">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-2">
@@ -441,3 +440,6 @@ export function StockAnalysisClient() {
     </div>
   );
 }
+stylingDirectives
+pl-s
+pl-kos
