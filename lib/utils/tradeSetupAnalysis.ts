@@ -5,6 +5,7 @@ import type {
   NewsItem,
   OptionsData,
 } from '@/lib/types';
+import { analyzeSentiment } from '@/lib/utils/sentimentAnalysis';
 
 export type SetupStage =
   | 'Setup Forming'    // Consolidating, direction unclear
