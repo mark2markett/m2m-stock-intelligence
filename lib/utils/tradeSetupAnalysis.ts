@@ -1,4 +1,3 @@
-import { analyzeSentiment } from './sentimentAnalysis';
 import type {
   TechnicalIndicators as TI,
   M2MScorecard,
@@ -7,7 +6,15 @@ import type {
   OptionsData,
 } from '@/lib/types';
 
-export type SetupStage = 'Setup Forming' | 'Just Triggered' | 'Mid Setup' | 'Late Setup';
+export type SetupStage =
+  | 'Setup Forming'    // Consolidating, direction unclear
+  | 'Just Triggered'   // Breakout just fired
+  | 'Mid Setup'        // Bullish trend healthy, in progress
+  | 'Late Setup'       // Extended bullish move, watch for exhaustion
+  | 'Breakdown'        // Bearish trend active — multiple signals aligned bearish
+  | 'Bearish Momentum' // Strong sustained bearish trend
+  | 'Oversold Bounce'  // Deeply oversold RSI, mean reversion watch
+  | 'Ranging';         // Low ADX, no directional conviction
 
 const PUBLICATION_THRESHOLD = 65;
 const REQUIRED_FACTORS_PASSED = 3;
@@ -19,37 +26,107 @@ export class TradeSetupAnalyzer {
     currentPrice: number,
     support: number[],
     resistance: number[],
-    recentPrices: number[]
+    recentPrices: number[],
+    weeklyEma?: { fast: number; slow: number } | null,
+    fourHourEma?: { fast: number; slow: number } | null,
   ): SetupStage {
-    const { rsi, macd, ema20, ema50, bollingerBands } = indicators;
+    const { rsi, macd, ema20, ema50, bollingerBands, adx } = indicators;
 
     const nearResistance = resistance.some(r => Math.abs(currentPrice - r) / currentPrice < 0.02);
     const nearSupport = support.some(s => Math.abs(currentPrice - s) / currentPrice < 0.02);
     const recentBreakout = this.checkRecentBreakout(recentPrices, resistance, support);
 
+    // Direction signals
     const macdBullish = macd.macd > macd.signal;
+    const macdBearish = macd.macd < macd.signal;
     const emaBullish = ema20 > ema50;
+    const emaBearish = ema20 < ema50;
     const rsiBullish = rsi > 50 && rsi < 80;
+    const rsiBearish = rsi < 50;
+    const rsiOversold = rsi < 30;
+    const rsiOverbought = rsi > 75;
 
     const macdMagnitude = Math.abs(macd.macd);
     const histogramRatio = macdMagnitude > 0 ? Math.abs(macd.histogram) / macdMagnitude : 0;
     const recentMacdCross = histogramRatio < 0.15;
 
+    // Count bullish vs bearish signals
+    const bullishSignals = [macdBullish, emaBullish, rsiBullish].filter(Boolean).length;
+    const bearishSignals = [macdBearish, emaBearish, rsiBearish].filter(Boolean).length;
+
+    const trendStrength = (adx as number | undefined) ?? 0;
+    const lowADX = trendStrength < 20;
+
+    // ── Deeply oversold — potential mean reversion regardless of trend ─────
+    if (rsiOversold && emaBearish) {
+      return 'Oversold Bounce';
+    }
+
+    // ── Just Triggered — fresh breakout or breakdown ──────────────────────
     if (recentBreakout && recentMacdCross) {
       return 'Just Triggered';
-    } else if (rsiBullish && emaBullish && macdBullish && !nearResistance) {
-      if (rsi > 75 || (currentPrice > bollingerBands.upper)) {
-        return 'Late Setup';
-      } else {
-        return 'Mid Setup';
+    }
+
+    // ── Ranging — no directional conviction ──────────────────────────────
+    if (lowADX && !nearSupport && !nearResistance && bullishSignals < 2 && bearishSignals < 2) {
+      return 'Ranging';
+    }
+
+    // ── Strong bearish trend ──────────────────────────────────────────────
+    if (bearishSignals === 3) {
+      // All 3 bearish: MACD bearish, EMA bearish, RSI bearish
+      if (trendStrength > 25 || macd.histogram < 0) {
+        return 'Bearish Momentum';
       }
-    } else if ((nearSupport || nearResistance) && !recentBreakout) {
-      return 'Setup Forming';
-    } else if (rsi > 80 || rsi < 20) {
-      return 'Late Setup';
-    } else {
+      return 'Breakdown';
+    }
+
+    // ── Partial bearish (2 of 3 signals bearish) ─────────────────────────
+    if (bearishSignals >= 2 && bullishSignals <= 1) {
+      return 'Breakdown';
+    }
+
+    // ── Bullish stages ────────────────────────────────────────────────────
+    if (bullishSignals === 3) {
+      if (rsiOverbought || currentPrice > bollingerBands.upper) {
+        return 'Late Setup';
+      }
+      return 'Mid Setup';
+    }
+
+    // ── Near key level, mixed signals ────────────────────────────────────
+    if (nearSupport || nearResistance) {
       return 'Setup Forming';
     }
+
+    // ── Multi-timeframe override ─────────────────────────────────────────
+    // If weekly and 4h both confirm bearish, upgrade daily mixed signals
+    // to Breakdown rather than leaving them as ambiguous Setup Forming
+    if (weeklyEma && fourHourEma) {
+      const weeklyBearish = weeklyEma.fast < weeklyEma.slow;
+      const fourHourBearish = fourHourEma.fast < fourHourEma.slow;
+      const weeklyBullish = weeklyEma.fast > weeklyEma.slow;
+      const fourHourBullish = fourHourEma.fast > fourHourEma.slow;
+
+      // Both higher timeframes bearish — override ambiguous daily to Breakdown
+      if (weeklyBearish && fourHourBearish && bearishSignals >= 1) {
+        return bearishSignals >= 2 ? 'Bearish Momentum' : 'Breakdown';
+      }
+
+      // Both higher timeframes bullish — reinforce or upgrade daily bullish
+      if (weeklyBullish && fourHourBullish && bullishSignals >= 2) {
+        return 'Mid Setup';
+      }
+    } else if (weeklyEma) {
+      // Weekly only — use as tiebreaker for ambiguous setups
+      const weeklyBearish = weeklyEma.fast < weeklyEma.slow;
+      if (weeklyBearish && bearishSignals >= 2) {
+        return 'Breakdown';
+      }
+    }
+
+    // ── Default: mixed signals, no clear stage ────────────────────────────
+    return 'Setup Forming';
   }
 
   private static checkRecentBreakout(recentPrices: number[], resistance: number[], support: number[]): boolean {
@@ -83,7 +160,7 @@ export class TradeSetupAnalyzer {
    * Publication threshold: 65+ total score
    * Multi-factor confirmation: 3 of 6 factors must pass
    *
-   * Multi-timeframe alignment (optional — gracefully skipped if data unavailable):
+   * Multi-timeframe alignment (optional â gracefully skipped if data unavailable):
    *   Weekly EMA trend:  bullish = +3pts, bearish = -3pts (applied in Factor 1)
    *   4h EMA trend:      bullish = +1.5pts, bearish = -1.5pts (applied in Factor 1)
    */
@@ -96,7 +173,7 @@ export class TradeSetupAnalyzer {
     support: number[],
     resistance: number[],
     optionsData?: OptionsData | null,
-    // Optional multi-timeframe EMA values — pass null/undefined to skip MTF scoring
+    // Optional multi-timeframe EMA values â pass null/undefined to skip MTF scoring
     weeklyEma?: { fast: number; slow: number } | null,
     fourHourEma?: { fast: number; slow: number } | null,
   ): M2MScorecard {
@@ -134,8 +211,8 @@ export class TradeSetupAnalyzer {
    *
    * Base scoring (18 pts max):
    *   All 3 aligned same direction = 18pts
-   *   Partial alignment = aligned count × 5pts
-   *   RSI healthy zone (30–70) = +2pts (was 6, reduced to make room for MTF)
+   *   Partial alignment = aligned count Ã 5pts
+   *   RSI healthy zone (30â70) = +2pts (was 6, reduced to make room for MTF)
    *   MACD histogram confirms = +2pts
    *
    * Multi-timeframe adjustments (applied after base, can go negative):
@@ -143,7 +220,7 @@ export class TradeSetupAnalyzer {
    *   4h EMA bullish = +1.5, bearish = -1.5
    *
    * Note: score is clamped to [0, 22] after MTF adjustments.
-   * Penalising counter-trend setups is intentional — they have
+   * Penalising counter-trend setups is intentional â they have
    * asymmetrically wider drawdown risk.
    */
   private static scoreStrategySignalStrength(
@@ -246,7 +323,7 @@ export class TradeSetupAnalyzer {
       score += 3;
       reasons.push('ADX shows moderate trend');
     } else {
-      reasons.push('ADX weak — no clear trend');
+      reasons.push('ADX weak â no clear trend');
     }
 
     // Bollinger Band position (up to 4)
@@ -281,6 +358,22 @@ export class TradeSetupAnalyzer {
         score += 1;
         reasons.push('Late-stage setup — extended');
         break;
+      case 'Bearish Momentum':
+        score += 5;
+        reasons.push('Bearish momentum in progress');
+        break;
+      case 'Breakdown':
+        score += 4;
+        reasons.push('Breakdown stage — bearish trend active');
+        break;
+      case 'Oversold Bounce':
+        score += 3;
+        reasons.push('Oversold — potential mean reversion');
+        break;
+      case 'Ranging':
+        score += 1;
+        reasons.push('Ranging — no directional conviction');
+        break;
     }
 
     // Stochastic confirmation (up to 2)
@@ -306,7 +399,7 @@ export class TradeSetupAnalyzer {
    * Factor 3: Options Quality (28 pts)
    *
    * Fallback when no options data: 14/28 (neutral 50%), passed=true.
-   * This is intentionally neutral — it should not inflate or deflate
+   * This is intentionally neutral â it should not inflate or deflate
    * the score when the data simply isn't available.
    */
   private static scoreOptionsQuality(
@@ -320,9 +413,9 @@ export class TradeSetupAnalyzer {
       return {
         name: 'Options Quality',
         maxPoints,
-        score: 14,  // exactly 50% — neutral, not a gift
+        score: 14,  // exactly 50% â neutral, not a gift
         passed: true,
-        rationale: 'Options data unavailable — neutral score applied.',
+        rationale: 'Options data unavailable â neutral score applied.',
       };
     }
 
@@ -369,10 +462,10 @@ export class TradeSetupAnalyzer {
       reasons.push('IV fairly priced vs realized vol');
     } else if (ivRatio >= 1.2) {
       score += 6;
-      reasons.push('IV below realized vol — options cheap');
+      reasons.push('IV below realized vol â options cheap');
     } else {
       score += 3;
-      reasons.push('IV elevated vs realized vol — options expensive');
+      reasons.push('IV elevated vs realized vol â options expensive');
     }
 
     score = Math.min(score, maxPoints);
@@ -444,7 +537,7 @@ export class TradeSetupAnalyzer {
 
     if (newsData.length === 0) {
       score = 4;
-      reasons.push('No recent news — neutral catalyst environment');
+      reasons.push('No recent news â neutral catalyst environment');
     } else {
       const sentiment = analyzeSentiment(newsData);
 
@@ -453,7 +546,7 @@ export class TradeSetupAnalyzer {
         reasons.push('Positive news sentiment provides catalyst support');
       } else if (sentiment === 'Neutral') {
         score = 6;
-        reasons.push('Neutral news sentiment — no catalyst headwind or tailwind');
+        reasons.push('Neutral news sentiment â no catalyst headwind or tailwind');
       } else {
         score = 1;
         reasons.push('Negative news sentiment presents catalyst headwind');
@@ -475,10 +568,10 @@ export class TradeSetupAnalyzer {
    * Factor 6: Money Flow / CMF (8 pts)
    *
    * CMF(20) measures institutional accumulation/distribution pressure.
-   * It is a confirming factor — strong standalone signals are rare,
+   * It is a confirming factor â strong standalone signals are rare,
    * but it validates or undermines the directional thesis from other factors.
    *
-   * Thresholds (asymmetric — bearish penalised more sharply):
+   * Thresholds (asymmetric â bearish penalised more sharply):
    *   > +0.20  = 8pts  (strong accumulation)
    *   +0.10 to +0.20 = 6pts  (moderate accumulation)
    *   +0.02 to +0.10 = 4pts  (mild positive flow)
@@ -493,22 +586,22 @@ export class TradeSetupAnalyzer {
 
     if (cmf > 0.20) {
       score = 8;
-      reasons.push(`Strong accumulation — CMF: ${cmf.toFixed(3)}`);
+      reasons.push(`Strong accumulation â CMF: ${cmf.toFixed(3)}`);
     } else if (cmf > 0.10) {
       score = 6;
-      reasons.push(`Moderate accumulation — CMF: ${cmf.toFixed(3)}`);
+      reasons.push(`Moderate accumulation â CMF: ${cmf.toFixed(3)}`);
     } else if (cmf > 0.02) {
       score = 4;
-      reasons.push(`Mild positive flow — CMF: ${cmf.toFixed(3)}`);
+      reasons.push(`Mild positive flow â CMF: ${cmf.toFixed(3)}`);
     } else if (cmf > -0.05) {
       score = 3;
-      reasons.push(`Near-zero flow — CMF: ${cmf.toFixed(3)}`);
+      reasons.push(`Near-zero flow â CMF: ${cmf.toFixed(3)}`);
     } else if (cmf > -0.15) {
       score = 1;
-      reasons.push(`Mild distribution pressure — CMF: ${cmf.toFixed(3)}`);
+      reasons.push(`Mild distribution pressure â CMF: ${cmf.toFixed(3)}`);
     } else {
       score = 0;
-      reasons.push(`Significant distribution — CMF: ${cmf.toFixed(3)}`);
+      reasons.push(`Significant distribution â CMF: ${cmf.toFixed(3)}`);
     }
 
     const passed = score >= maxPoints * 0.5; // 4+ to pass
