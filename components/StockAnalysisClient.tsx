@@ -1,4 +1,6 @@
 
+'use client';
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { BarChart3, TrendingUp, FileText, Radar } from 'lucide-react';
 import { toast } from 'sonner';
