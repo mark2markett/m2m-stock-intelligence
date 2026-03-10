@@ -1,28 +1,10 @@
 {
-  "crons": [
-    {
-      "path": "/api/scanner/trigger?start=0&end=120",
-      "schedule": "0 13 * * 1-5"
+  "functions": {
+    "app/api/analyze/route.ts": {
+      "maxDuration": 60
     },
-    {
-      "path": "/api/scanner/trigger?start=120&end=240",
-      "schedule": "10 13 * * 1-5"
-    },
-    {
-      "path": "/api/scanner/trigger?start=240&end=360",
-      "schedule": "20 13 * * 1-5"
-    },
-    {
-      "path": "/api/scanner/trigger?start=360&end=480",
-      "schedule": "30 13 * * 1-5"
-    },
-    {
-      "path": "/api/scanner/trigger?start=480&end=503",
-      "schedule": "40 13 * * 1-5"
-    },
-    {
-      "path": "/api/scanner/merge",
-      "schedule": "50 13 * * 1-5"
+    "app/api/scanner/batch/route.ts": {
+      "maxDuration": 60
     }
-  ]
+  }
 }
