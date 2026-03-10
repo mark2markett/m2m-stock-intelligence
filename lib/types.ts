@@ -1,4 +1,3 @@
-export interface StockData {
   symbol: string;
   name: string;
   price: number;
@@ -66,7 +65,7 @@ export interface M2MScorecard {
 
 export interface AnalysisReport {
   symbol: string;
-  setupStage: 'Setup Forming' | 'Just Triggered' | 'Mid Setup' | 'Late Setup';
+  setupStage: 'Setup Forming' | 'Just Triggered' | 'Mid Setup' | 'Late Setup' | 'Breakdown' | 'Bearish Momentum' | 'Oversold Bounce' | 'Ranging';
   scorecard: M2MScorecard;
   volatilityRegime: 'High' | 'Normal' | 'Low';
   confidenceScore: number;
