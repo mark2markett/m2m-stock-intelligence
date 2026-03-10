@@ -1,6 +1,9 @@
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
 import { ClaudeService } from './claudeService';
+import { TechnicalIndicators } from '@/lib/utils/technicalIndicators';
+import { SupportResistanceAnalyzer } from '@/lib/utils/supportResistance';
+import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
 import { assessQuality } from '@/lib/utils/qualityAssessment';
 import type { SP500Stock, ScannerStockResult } from '@/lib/types';
 
