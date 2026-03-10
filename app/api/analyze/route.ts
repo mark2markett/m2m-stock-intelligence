@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnalysisEngine } from '@/lib/server/analysisEngine';
-import { checkRateLimit } from '@/lib/server/rateLimiter';
 
-const SYMBOL_REGEX = /^[A-Z]{1,5}$/;
+export const maxDuration = 60;
+
 
 const COMMON_SYMBOLS = [
   'AAPL','MSFT','GOOGL','GOOG','AMZN','TSLA','NVDA','META','NFLX','AMD',
