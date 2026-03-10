@@ -1,16 +1,12 @@
-import 'server-only';
-import { TechnicalIndicators } from '@/lib/utils/technicalIndicators';
-import { SupportResistanceAnalyzer } from '@/lib/utils/supportResistance';
-import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
-import { OpenAIService } from './openaiService';
+import { ClaudeService } from './claudeService';
 import { assessQuality } from '@/lib/utils/qualityAssessment';
 import type { SP500Stock, ScannerStockResult } from '@/lib/types';
 
 const CONCURRENCY = 10;
 
-async function analyzeStock(stock: SP500Stock): Promise<ScannerStockResult> {
+async function analyzeStock(stock: SP500Stock): Promise\u003cScannerStockResult\u003e {
   const historicalLimit = 120;
   const newsLimit = 3;
 
@@ -20,10 +16,10 @@ async function analyzeStock(stock: SP500Stock): Promise<ScannerStockResult> {
     NewsService.getStockNews(stock.symbol, newsLimit),
   ]);
 
-  const closes = historicalData.map((d: any) => d.close);
-  const highs = historicalData.map((d: any) => d.high);
-  const lows = historicalData.map((d: any) => d.low);
-  const volumes = historicalData.map((d: any) => d.volume);
+  const closes = historicalData.map((d: any) =\u003e d.close);
+  const highs = historicalData.map((d: any) =\u003e d.high);
+  const lows = historicalData.map((d: any) =\u003e d.low);
+  const volumes = historicalData.map((d: any) =\u003e d.volume);
 
   const indicatorResults = TechnicalIndicators.computeIndicators(highs, lows, closes, volumes, 'daily');
   const indicators = indicatorResults.indicators;
@@ -44,15 +40,15 @@ async function analyzeStock(stock: SP500Stock): Promise<ScannerStockResult> {
     null // skip options data for scanner
   );
 
-  const macdSignal: 'bullish' | 'bearish' = indicators.macd.macd > indicators.macd.signal ? 'bullish' : 'bearish';
-  const ema20above50 = indicators.ema20 > indicators.ema50;
-  const priceAboveEma20 = stockData.price > indicators.ema20;
+  const macdSignal: 'bullish' | 'bearish' = indicators.macd.macd \u003e indicators.macd.signal ? 'bullish' : 'bearish';
+  const ema20above50 = indicators.ema20 \u003e indicators.ema50;
+  const priceAboveEma20 = stockData.price \u003e indicators.ema20;
   const trendAlignment: 'bullish' | 'bearish' | 'neutral' =
-    ema20above50 && priceAboveEma20 ? 'bullish' :
-    !ema20above50 && !priceAboveEma20 ? 'bearish' : 'neutral';
+    ema20above50 \u0026\u0026 priceAboveEma20 ? 'bullish' :
+    !ema20above50 \u0026\u0026 !priceAboveEma20 ? 'bearish' : 'neutral';
 
-  const sentiment = newsData.length > 0
-    ? newsData.map(n => `${n.headline} (${n.sentiment})`).join('; ')
+  const sentiment = newsData.length \u003e 0
+    ? newsData.map(n =\u003e `${n.headline} (${n.sentiment})`).join('; ')
     : 'No significant news';
 
   // Algorithmic scoring — deterministic, transparent, consistent across runs
@@ -68,7 +64,7 @@ async function analyzeStock(stock: SP500Stock): Promise<ScannerStockResult> {
   let aiSummary = '';
 
   try {
-    const insight = await OpenAIService.generateScannerInsight({
+    const insight = await ClaudeService.generateScannerInsight({
       symbol: stock.symbol,
       price: stockData.price,
       change: stockData.changePercent,
@@ -176,14 +172,14 @@ function mapToErrorResult(stock: SP500Stock, error: string): ScannerStockResult 
   };
 }
 
-async function runWithConcurrency<T>(
+async function runWithConcurrency\u003cT\u003e(
   items: T[],
-  fn: (item: T) => Promise<void>,
+  fn: (item: T) =\u003e Promise\u003cvoid\u003e,
   concurrency: number
-): Promise<void> {
+): Promise\u003cvoid\u003e {
   const queue = [...items];
-  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
-    while (queue.length > 0) {
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () =\u003e {
+    while (queue.length \u003e 0) {
       const item = queue.shift()!;
       await fn(item);
     }
@@ -192,10 +188,10 @@ async function runWithConcurrency<T>(
 }
 
 export class ScannerEngine {
-  static async analyzeBatch(stocks: SP500Stock[]): Promise<ScannerStockResult[]> {
+  static async analyzeBatch(stocks: SP500Stock[]): Promise\u003cScannerStockResult[]\u003e {
     const results: ScannerStockResult[] = [];
 
-    await runWithConcurrency(stocks, async (stock) => {
+    await runWithConcurrency(stocks, async (stock) =\u003e {
       try {
         const result = await analyzeStock(stock);
         results.push(result);

@@ -3,7 +3,7 @@ import { SupportResistanceAnalyzer } from '@/lib/utils/supportResistance';
 import { TradeSetupAnalyzer } from '@/lib/utils/tradeSetupAnalysis';
 import { PolygonService } from './polygonService';
 import { NewsService } from './newsService';
-import { OpenAIService } from './openaiService';
+import { ClaudeService } from './claudeService';
 import { assessQuality } from '@/lib/utils/qualityAssessment';
 import type { AnalysisReport, AnalysisResult, ReportSection, OptimalTrade } from '@/lib/types';
 
@@ -77,7 +77,7 @@ export class AnalysisEngine {
     const dominantTrend = this.computeDominantTrend(indicators, stockData.price);
 
     // Run main AI analysis and optimal trade call in parallel
-    const aiReportPromise = OpenAIService.generateAnalysisReport(
+    const aiReportPromise = ClaudeService.generateAnalysisReport(
       symbol,
       stockData,
       indicators,
@@ -95,7 +95,7 @@ export class AnalysisEngine {
       dominantTrend
     );
 
-    const optimalTradePromise = OpenAIService.generateOptimalTrade({
+    const optimalTradePromise = ClaudeService.generateOptimalTrade({
       symbol,
       price: stockData.price,
       changePercent: stockData.changePercent,
