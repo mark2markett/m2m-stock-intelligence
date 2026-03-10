@@ -44,7 +44,7 @@ export class AnalysisEngine {
       this.fetchMultiTimeframeEma(symbol, '4hour', 8, 20, 60),
     ]);
 
-    const setupStage = TradeSetupAnalyzer.analyzeSetupStage(indicators, stockData.price, support, resistance, closes);
+    const setupStage = TradeSetupAnalyzer.analyzeSetupStage(indicators, stockData.price, support, resistance, closes, weeklyEma, fourHourEma);
 
     const rsiInterpretation = TechnicalIndicators.interpretRsiForPdf(
       indicators.rsi,
