@@ -442,6 +442,3 @@ export function StockAnalysisClient() {
     </div>
   );
 }
-stylingDirectives
-pl-s
-pl-kos
