@@ -87,7 +87,7 @@ When a trade setup exists, provide a structured educational trade framework with
       signalConfidence, dominantTrend
     );
 
-    return callClaude(systemPrompt, userPrompt, 3000);
+    return callClaude(systemPrompt, userPrompt, 1800);
   }
 
   // ─── SCANNER INSIGHT ──────────────────────────────────────────────────────
@@ -301,7 +301,7 @@ ${!hasSetup ? 'For the LOW quality scenario: set vehicle to "stock", direction t
 
 REMINDER: riskRewardRatio must be arithmetically derived from your actual price levels, not a placeholder.`;
 
-    const raw = await callClaude(systemPrompt, userPrompt, 2000);
+    const raw = await callClaude(systemPrompt, userPrompt, 1200);
     const clean = raw.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(clean);
 
