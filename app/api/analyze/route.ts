@@ -1,6 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AnalysisEngine } from '@/lib/server/analysisEngine';
 
+// ─── Rate Limiting ────────────────────────────────────────────────────────────
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 5; // 5 requests per minute per IP
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetMs: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - 1, resetMs: 0 };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return { allowed: false, remaining: 0, resetMs: entry.resetAt - now };
+  }
+
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count, resetMs: 0 };
+}
+
+// ─── Symbol Validation ────────────────────────────────────────────────────────
+const SYMBOL_REGEX = /^[A-Z]{1,5}$/;
+
 export const maxDuration = 60;
 
 
