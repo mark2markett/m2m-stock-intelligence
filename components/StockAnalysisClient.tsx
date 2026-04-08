@@ -2,10 +2,9 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { BarChart3, TrendingUp, FileText, Radar } from 'lucide-react';
+import { BarChart3, TrendingUp, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { StockSearchForm } from '@/components/StockSearchForm';
 import { AnalysisResults } from '@/components/AnalysisResults';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -53,6 +52,8 @@ export function StockAnalysisClient() {
   const searchParams = useSearchParams();
 
   const hasResults = !!(currentReport && currentStock && currentIndicators);
+  const embedMode = searchParams.get('embed') === 'true';
+  const authToken = searchParams.get('token') || null;
 
   const clearLoadingTimers = useCallback(() => {
     loadingTimers.current.forEach(clearTimeout);
@@ -81,7 +82,7 @@ export function StockAnalysisClient() {
     registerAppListeners();
   }, []);
 
-  // Drill-down from scanner: auto-analyze ?symbol= param
+  // Auto-analyze when ?symbol= param is present
   const drillDownSymbol = searchParams.get('symbol');
   const drillDownTriggered = useRef(false);
   useEffect(() => {
@@ -120,7 +121,7 @@ export function StockAnalysisClient() {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol }),
+        body: JSON.stringify({ symbol, ...(authToken ? { token: authToken } : {}) }),
         signal: controller.signal,
       });
 
@@ -214,10 +215,6 @@ export function StockAnalysisClient() {
       handleDownloadPDF();
       return;
     }
-    if (tab === 'scanner') {
-      window.location.href = '/scanner';
-      return;
-    }
     setActiveTab(tab);
   }, [handleDownloadPDF]);
 
@@ -230,6 +227,49 @@ export function StockAnalysisClient() {
   const { isPulling, pullDistance, isRefreshing } = usePullToRefresh(mainRef, {
     onRefresh: handlePullToRefresh,
   });
+
+  // --- EMBED LAYOUT (for mark2markets.com iframe) ---
+  if (embedMode) {
+    return (
+      <div className="min-h-screen bg-transparent">
+        <ToastProvider />
+        <main className="max-w-6xl mx-auto px-4 py-4">
+          <div className="space-y-6">
+            {/* Search form — allows ticker changes within the embed */}
+            <div className="max-w-2xl mx-auto">
+              <StockSearchForm onAnalyze={handleAnalyze} isLoading={isLoading} />
+            </div>
+
+            {/* Error */}
+            {error && (
+              <ErrorDisplay
+                error={error}
+                onRetry={handleRetry}
+                onRetryWithSymbol={handleRetryWithSymbol}
+              />
+            )}
+
+            {/* Loading */}
+            {isLoading && <LoadingSpinner currentStep={loadingStep} />}
+
+            {/* Results — full, unchanged */}
+            {hasResults && !isLoading && (
+              <AnalysisResults
+                report={currentReport}
+                stockData={currentStock}
+                indicators={currentIndicators}
+                newsData={currentNews}
+                optionsData={currentOptionsData}
+                optimalTrade={currentOptimalTrade}
+                onDownloadPDF={handleDownloadPDF}
+                isPartialResult={isPartialResult}
+              />
+            )}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   // --- MOBILE LAYOUT ---
   if (isMobile) {
@@ -327,18 +367,9 @@ export function StockAnalysisClient() {
                 <p className="text-xs text-[#6B7280]">Educational Market Analysis</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/scanner"
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-[#9CA3AF] hover:text-[#00E59B] transition-colors rounded-lg hover:bg-[#1f2937]"
-              >
-                <Radar className="h-4 w-4" />
-                <span>S&P 500 Scanner</span>
-              </Link>
-              <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
-                <TrendingUp className="h-4 w-4 text-[#00E59B]" />
-                <span>Powered by AI & Real-Time Data</span>
-              </div>
+            <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+              <TrendingUp className="h-4 w-4 text-[#00E59B]" />
+              <span>Powered by AI & Real-Time Data</span>
             </div>
           </div>
         </div>
